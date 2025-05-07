@@ -19,8 +19,6 @@ class HomeAssistantCommands(GestureCommands):
         self.client.trigger_service('switch', 'turn_off', entity_id="switch.studyfanswitch_study_light")
 
     def call(self, key):
-        print(key)
-        
         if key == 'right_thumb_up':
             self.turn_on()
         elif key == 'right_thumb_down':

@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 import time
 
+import cv2
 import torch
 
 from hand_gesture_regonition.gesture import Gesture, GestureLibrary
@@ -52,10 +53,22 @@ class GestureRegonition(Process):
             if self.future is not None and self.future.done():
                 self.future = None
             
+    def draw(self, frame: cv2.typing.MatLike) -> cv2.typing.MatLike:
+        if self.last_key:
+            frame = cv2.putText(
+                frame, 
+                self.last_key,
+                (frame.shape[0]-20, 20),
+                cv2.QT_FONT_NORMAL,
+                0.5,
+                (0, 0, 0)
+            )
+        return frame
+            
     def close(self):
         self.commands.close()
         
     def create_commands(self):
-        if bool(os.environ.get('HOME_ASSISTANT_COMMANDS', 'False')):
+        if os.environ.get('HOME_ASSISTANT_COMMANDS', 'False').lower() == 'true':
             return HomeAssistantCommands()
         return GestureCommands()
