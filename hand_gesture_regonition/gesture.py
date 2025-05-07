@@ -10,111 +10,80 @@ from numpy import double
 
 @dataclass
 class Landmark:
-    x: double
-    y: double
-    z: double
-
-    @classmethod
-    def parse(cls, landmark) -> "Landmark":
-        return cls(landmark.x, landmark.y, landmark.z)
+    tensor: torch.Tensor
+    offset: int
     
-    def __iter__(self):
-        return iter([self.x, self.y, self.z])
+    @property
+    def x(self):
+        return self.tensor[self.offset].item()
+    
+    @property
+    def y(self):
+        return self.tensor[self.offset+1].item()
+    
+    @property
+    def z(self):
+        return self.tensor[self.offset+2].item()
 
 @dataclass
 class Hand:
-    landmarks: List[Landmark]
-
-    @classmethod
-    def parse(cls, landmarks) -> "Hand":
-        return cls([
-            Landmark.parse(landmark)
-            for landmark in landmarks
-        ])
+    TSIZE = 3*21
     
-    def to_tensor(self):
-        landmarks = []
-        for landmark in self.landmarks:
-            landmarks.extend(list(landmark))
-
-        return torch.Tensor(landmarks)
+    tensor: torch.Tensor
+    offset: int
+    
+    @property
+    def landmarks(self) -> List[Landmark]:
+        return [Landmark(self.tensor, self.offset+3*i) for i in range(21)]
+            
 
 @dataclass
 class GestureFrame:
-    left: Hand
-    right: Hand
-        
-    def to_tensor(self) -> torch.Tensor:
-        result = torch.zeros(2*21*3)
-
-        if self.left is not None:
-            result[:21*3] = self.left.to_tensor()
-        
-        if self.right is not None:
-            result[21*3:] = self.right.to_tensor()
-
-        return result
+    TSIZE = 2*Hand.TSIZE
+    
+    tensor: torch.Tensor
+    
+    @property
+    def left(self) -> Hand:
+        return Hand(self.tensor, 0)
+    
+    @property
+    def right(self) -> Hand:
+        return Hand(self.tensor, Hand.TSIZE)
 
 @dataclass
 class Gesture:
-    frames: List[GestureFrame]
+    MAX_FRAMES = 64
+    
+    tensor: torch.Tensor
 
-    def __init__(self):
-        self.frames = []
+    def __init__(self, tensor=None):
+        self.tensor = tensor
+        if tensor is None:
+            self.reset()
 
+    def reset(self):
+        self.tensor = torch.zeros((self.MAX_FRAMES, GestureFrame.TSIZE))
+    
     def capture(self, detection):
-        hands = [None, None]
+        frame = torch.zeros((1,GestureFrame.TSIZE))
 
         for i in range(len(detection.multi_handedness)):
             index = detection.multi_handedness[i].classification[0].index
 
-            hands[index] = Hand.parse(detection.multi_hand_landmarks[i].landmark)
+            for i, landmark in enumerate(detection.multi_hand_landmarks[i].landmark):
+                frame[0,index*Hand.TSIZE+3*i] = landmark.x
+                frame[0,index*Hand.TSIZE+3*i+1] = landmark.y
+                frame[0,index*Hand.TSIZE+3*i+2] = landmark.z
         
-        self.frames.append(GestureFrame(*hands))
-
-    @classmethod
-    def decode(cls, frames) -> "Gesture":
-        gesture = cls()
-
-        for frame in frames['frames']:
-            hands = [None, None]
-
-            for hand_key, hand in frame.items():
-                if hand is not None:
-                    landmarks = []
-
-                    for landmark in hand['landmarks']:
-                        landmarks.append(Landmark(landmark['x'],landmark['y'],landmark['z']))
-
-                    index = (hand_key == 'right') * 1
-
-                    hands[index] = Hand(landmarks)
-            
-            gesture.frames.append(GestureFrame(*hands))
-        
-        return gesture
-
-
-    def encode(self):
-        return asdict(self)
-
+        self.tensor = torch.cat([self.tensor[1:], frame], dim=0)
 
     def save(self, filename):
-        with open(filename, 'w') as f:
-            json.dump(self.encode(), f)
+        torch.save(self.tensor, filename)
 
     @classmethod
     def load(cls, filename) -> "Gesture":
-        with open(filename, 'r') as f:
-            return cls.decode(json.load(f))
-        
-    def to_tensor(self) -> torch.Tensor:
-        result = torch.zeros((len(self.frames), 2*21*3))
-
-        for i, frame in enumerate(self.frames):
-            result[i, :] = frame.to_tensor()
-
-        return result
+        return cls(torch.load(filename))
         
 class GestureVarients:
     def __init__(self, name: str, path: Path):
@@ -151,36 +120,14 @@ class GestureLibrary:
     @classmethod
     def keys(cls) -> List[str]:
         # this is a classmethod so that gesture class index is consistant
-        return ['left_wave', 'right_wave', 'left_move_up', 'right_move_up']
-    
-class GestureLibraryDataset(Dataset):
-    def __init__(self, library: GestureLibrary, train=True, train_subset=0.8):
-        super().__init__()
-
-        self.library = library
-
-        self.gesture_variant_files = self.collect_gesture_variant_files(train, train_subset)
-
-    def collect_gesture_variant_files(self, train, train_subset) -> List[Tuple[int, Path]]:
-        result = []
-
-        for j, key in enumerate(self.library.keys()):
-            variants = self.library.get(key)
-            size = len(variants)
-            train_size = math.floor(size * train_subset)
-
-            index_start = 0 if train else train_size
-            index_end = train_size if train else size
-
-            for i in range(index_start, index_end):
-                result.append((j, variants.get_file(i)))
-
-        return result
-
-    def __len__(self):
-        return len(self.gesture_variant_files)
-    
-    def __getitem__(self, index):
-        cls, path = self.gesture_variant_files[index]
-
-        return Gesture.load(path).to_tensor(), cls
+        return [
+            'right_thumb_up', 
+            'left_thumb_up', 
+            'right_thumb_down', 
+            'left_thumb_down', 
+            'right_one', 
+            'left_one', 
+            'right_ok', 
+            'left_ok',
+            'ten',
+        ]

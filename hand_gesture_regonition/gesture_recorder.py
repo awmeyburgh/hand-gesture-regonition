@@ -1,7 +1,7 @@
 from typing import Optional
 
 import cv2
-from hand_gesture_regonition.gesture import Gesture, GestureVarients
+from hand_gesture_regonition.gesture import Gesture, GestureLibrary, GestureVarients
 from hand_gesture_regonition.input import Input
 from hand_gesture_regonition.process import Process
 
@@ -10,8 +10,9 @@ class GestureRecorder(Process):
     BORDER_WIDTH = 10
     BORDER_COLOR = (0, 255, 0)
 
-    def __init__(self, variants: GestureVarients):
-        self.variants = variants
+    def __init__(self, library: GestureLibrary):
+        self.library = library
+        self.key = 0
         self.gesture: Optional[Gesture] = None
         self.recording = False
 
@@ -26,8 +27,21 @@ class GestureRecorder(Process):
                 cv2.BORDER_CONSTANT,
                 value=self.BORDER_COLOR,
             )
+            
+        frame = cv2.putText(
+            frame, 
+            self.variants.name,
+            (5, 20),
+            cv2.QT_FONT_NORMAL,
+            1,
+            (0, 0, 0)
+        )
 
         return frame
+    
+    @property
+    def variants(self):
+        return self.library.get(self.library.keys()[self.key])
 
     def process(self):
         if Input.is_pressed("r"):
@@ -38,6 +52,12 @@ class GestureRecorder(Process):
             else:
                 self.variants.save(self.gesture)
                 self.gesture = None
+                
+        if Input.is_pressed("d"):
+            self.key = (self.key + 1) % len(self.library.keys())
+            
+        if Input.is_pressed("a"):
+            self.key = (self.key - 1 + len(self.library.keys())) % len(self.library.keys())
 
         if self.recording:
             detection = self.program.hands_overlay.detection

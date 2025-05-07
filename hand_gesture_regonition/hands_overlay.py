@@ -5,14 +5,15 @@ from hand_gesture_regonition.process import Process
 
 
 class HandsOverlay(Process):
-    def __init__(self):
+    def __init__(self, draw_landmarks = True):
+        self.draw_landmarks = draw_landmarks
         self.hands = hands.Hands(
             min_detection_confidence=0.8, min_tracking_confidence=0.5
         )
         self.detection = None
 
     def draw(self, frame: cv2.typing.MatLike) -> cv2.typing.MatLike:
-        if self.detection.multi_hand_landmarks:
+        if self.detection.multi_hand_landmarks and self.draw_landmarks:
             for hand_lms in self.detection.multi_hand_landmarks:
                 drawing_utils.draw_landmarks(
                     frame,

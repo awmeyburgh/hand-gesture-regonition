@@ -4,8 +4,10 @@ import numpy as np
 
 from hand_gesture_regonition.gesture import GestureLibrary
 from hand_gesture_regonition.gesture_recorder import GestureRecorder
+from hand_gesture_regonition.gesture_regonition import GestureCommands, GestureRegonition
 from hand_gesture_regonition.hands_overlay import HandsOverlay
 from hand_gesture_regonition.input import Input
+from hand_gesture_regonition.network import GestureRegonitionNetwork
 from hand_gesture_regonition.process import Process
 
 
@@ -25,11 +27,13 @@ class Program:
         
         self.input = Input()
         self.hands_overlay = HandsOverlay()
+        self.gesture_library = GestureLibrary('data')
         
         self.processes: List[Process] = [
             self.input,
             self.hands_overlay,
-            GestureRecorder(GestureLibrary('data').get('left_move_up'))
+            GestureRecorder(self.gesture_library),
+            GestureRegonition("network.bin")
         ]
 
     def close(self):
