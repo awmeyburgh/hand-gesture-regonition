@@ -1,63 +1,56 @@
+from typing import List, Optional
 from torch import nn
 import torch
 
 from hand_gesture_regonition.gesture import Gesture, GestureLibrary
 
-class GestureRegonitionNetwork(nn.Module):
+class StaticGRNetwork(nn.Module):
+    __classes = None
     def __init__(self):
         super().__init__()
         
-        # self.lstm = nn.ModuleList([
-        #     nn.LSTM(GestureFrame.TSIZE, 30, Gesture.MAX_FRAMES, batch_first=True),
-        # ])
-        
-        # self.output = nn.Sequential(
-        #     nn.Linear(30, 30),
-        #     nn.Sigmoid(),
-        #     nn.Linear(30, len(GestureLibrary.keys())),
-        #     nn.Sigmoid()
-        # )
-        
-        # self.layers = nn.Sequential(
-        #     nn.Conv1d(Gesture.MAX_FRAMES, 256, 3),
-        #     nn.ReLU(),
-        #     nn.MaxPool1d(2),
-        #     nn.Conv1d(256, 1024, 11),
-        #     nn.Sigmoid(),
-        #     nn.MaxPool1d(2),
-        #     nn.Flatten(),
-        #     nn.Sigmoid(),
-        #     nn.Linear(26624, 100),
-        #     nn.ReLU(),
-        #     nn.Linear(100, len(GestureLibrary.keys())),
-        #     nn.Sigmoid()
-        # )
-        
         self.layers = nn.Sequential(
-            nn.Conv1d(Gesture.MAX_FRAMES, 1024, 3),
-            nn.AvgPool2d(4),
-            nn.Flatten(),
-            nn.Linear(7936, 100),
+            nn.Conv1d(3, 64, 2),
             nn.ReLU(),
-            nn.Linear(100, len(GestureLibrary.keys())),
-            nn.Sigmoid()
+            nn.Conv1d(64, 256, 2),
+            nn.MaxPool1d(4),
+            nn.Sigmoid(),
+            nn.Flatten(),
+            nn.Linear(1280, 100),
+            nn.ReLU(),
+            nn.Linear(100, len(self.classes())),
+            nn.Sigmoid(),
         )
         
         self.criterion = nn.BCELoss()
         
     def forward(self, X):
-        # hc = [
-        #     (
-        #         torch.zeros((Gesture.MAX_FRAMES, X.shape[0], 30)),
-        #         torch.zeros((Gesture.MAX_FRAMES, X.shape[0], 30))
-        #     )
-        # ]
-        
-        # for i in range(len(self.lstm)):
-        #     X, _ = self.lstm[i](X, hc[i])
+        if len(X.shape) == 4:
+            # only do static frame if gesture is full movable frame
+            X = X[:, -1, :, :]
             
-        # return self.output(X[:, -1, :])
+        X = X.reshape(-1, 3, 22)
+        
         return self.layers(X)
+    
+    def classify(self, gesture: Gesture, confidence=0.8) -> Optional[str]:
+        x = gesture.tensor[-1]
+        y_pred = self.forward(x)
+        y_pred = y_pred >= confidence
+        
+        if y_pred.sum().item() == 1:
+            _, index = torch.max(y_pred, 1)
+            key = self.classes()[index]
+            
+            if gesture.is_right and 'left' in key:
+                return None
+            
+            if not gesture.is_right and 'left' not in key:
+                return None
+            
+            return key
+        
+        return None
         
     def backward(self, Y_pred, Y) -> float:
         loss = self.criterion(Y_pred, Y)
@@ -69,7 +62,7 @@ class GestureRegonitionNetwork(nn.Module):
         torch.save(self.state_dict(), filename)
         
     @classmethod
-    def load(cls, filename, error_ok=True) -> "GestureRegonitionNetwork":
+    def load(cls, filename, error_ok=True) -> "StaticGRNetwork":
         result = cls()
         
         try:
@@ -92,3 +85,10 @@ class GestureRegonitionNetwork(nn.Module):
             result[i] = torch.all(Y_pred[i]==Y[i]) * 1
             
         return result
+    
+    @classmethod
+    def classes(cls) -> List[str]:
+        if cls.__classes is None:
+            cls.__classes = [key for key in GestureLibrary.keys() if key.startswith('s_')]
+        return cls.__classes
+    

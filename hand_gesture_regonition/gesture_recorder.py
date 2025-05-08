@@ -51,7 +51,16 @@ class GestureRecorder(Process):
                 self.recording = not self.recording
 
                 if self.recording:
-                    self.gesture = Gesture()
+                    detection = self.program.hands_overlay.detection
+                    
+                    if detection.multi_handedness:
+                        self.gesture = Gesture(is_right=detection.multi_handedness[0].classification[0].index == 1)
+                        
+                        if self.variants.is_static:
+                            self.gesture.capture(detection)
+                            self.variants.save(self.gesture)
+                            self.gesture = None
+                            self.recording = False
                 else:
                     self.variants.save(self.gesture)
                     self.gesture = None
@@ -63,7 +72,4 @@ class GestureRecorder(Process):
                 self.key = (self.key - 1 + len(self.library.keys())) % len(self.library.keys())
 
             if self.recording:
-                detection = self.program.hands_overlay.detection
-
-                if detection.multi_hand_landmarks:
-                    self.gesture.capture(detection)
+                self.gesture.capture(self.program.hands_overlay.detection)

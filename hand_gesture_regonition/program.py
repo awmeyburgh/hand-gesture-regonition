@@ -7,7 +7,6 @@ from hand_gesture_regonition.gesture_recorder import GestureRecorder
 from hand_gesture_regonition.gesture_regonition import GestureCommands, GestureRegonition
 from hand_gesture_regonition.hands_overlay import HandsOverlay
 from hand_gesture_regonition.input import Input
-from hand_gesture_regonition.network import GestureRegonitionNetwork
 from hand_gesture_regonition.process import Process
 
 
@@ -33,7 +32,7 @@ class Program:
             self.input,
             self.hands_overlay,
             GestureRecorder(self.gesture_library),
-            GestureRegonition("network.bin")
+            GestureRegonition()
         ]
 
     def close(self):
