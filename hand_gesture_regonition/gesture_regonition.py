@@ -68,7 +68,7 @@ class GestureRegonition(Process):
             frame = cv2.putText(
                 frame, 
                 ', '.join(keys),
-                (frame.shape[0]-40, 20),
+                (frame.shape[0]-160, 20),
                 cv2.QT_FONT_NORMAL,
                 0.5,
                 (0, 0, 0)

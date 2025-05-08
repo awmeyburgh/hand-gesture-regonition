@@ -70,6 +70,9 @@ class GestureRecorder(Process):
                 
             if Input.is_pressed("a"):
                 self.key = (self.key - 1 + len(self.library.keys())) % len(self.library.keys())
+                
+            if Input.is_pressed('s'):
+                self.enabled = not self.enabled
 
             if self.recording:
                 self.gesture.capture(self.program.hands_overlay.detection)
