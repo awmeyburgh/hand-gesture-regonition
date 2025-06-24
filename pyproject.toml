@@ -13,6 +13,7 @@ torch = {version = "^2.7.0+cpu", source = "pytorch-cpu"}
 torchvision = {version = "^0.22.0+cpu", source = "pytorch-cpu"}
 python-dotenv = "^1.1.0"
 homeassistant-api = "^5.0.0"
+scikit-learn = "^1.7.0"
 
 
 [build-system]
