@@ -1,15 +1,16 @@
 from pathlib import Path
+from typing import List
 
 import numpy as np
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import GradientBoostingClassifier, RandomForestClassifier, VotingClassifier
 from sklearn.model_selection import GridSearchCV
-from hand_gesture_regonition import dataset
+from hand_gesture_regonition.v1 import dataset
 import torch
 from torch.utils.data import DataLoader
 
-from hand_gesture_regonition.gesture import migration
-from hand_gesture_regonition.network import StaticGRNetwork
-from sklearn.metrics import accuracy_score, f1_score, recall_score, precision_score
+from hand_gesture_regonition.v1.gesture import migration
+from hand_gesture_regonition.v1.network import StaticGRNetwork
+from sklearn.metrics import classification_report
 
 def load_modal(do_load, path) -> StaticGRNetwork:
     if path.exists() and do_load:
@@ -71,20 +72,17 @@ def test(modal: StaticGRNetwork, testloader: DataLoader):
             total += Y.size(0)
             correct += modal.eval_y(Y_pred, Y).sum().item()
 
-    ALL_Y = np.concatenate(ALL_Y)
-    ALL_Y_pred = np.concatenate(ALL_Y_pred)
-    b = np.zeros_like(ALL_Y_pred)
-    b[np.arange(len(ALL_Y_pred)), ALL_Y_pred.argmax(1)] = 1
-    ALL_Y_pred = b
+    y_test = np.concatenate(ALL_Y)
+    y_pred = np.concatenate(ALL_Y_pred)
+    b = np.zeros_like(y_pred)
+    b[np.arange(len(y_pred)), y_pred.argmax(1)] = 1
+    y_pred = b
 
-    print(f'Accuracy: {accuracy_score(ALL_Y, ALL_Y_pred, normalize=True)}')
-    print(f'Recall: {recall_score(ALL_Y, ALL_Y_pred, average='weighted')}')
-    print(f'Precision: {precision_score(ALL_Y, ALL_Y_pred, average='weighted')}')
-    print(f'F1: {f1_score(ALL_Y, ALL_Y_pred, average='weighted')}')
+    print(classification_report(y_test, y_pred))
 
     # print(f'Accuracy: {correct}/{total} ({correct/total:.2%})')
 
-def train_random_forest(trainloader: DataLoader) -> RandomForestClassifier:
+def train_estimator(estimator, trainloader: DataLoader):
     ALL_X = []
     ALL_Y = []
 
@@ -97,8 +95,9 @@ def train_random_forest(trainloader: DataLoader) -> RandomForestClassifier:
 
     X_train = X_train.reshape((X_train.shape[0], -1))
 
+    return estimator.fit(X_train, y_train)
 
-
+def train_random_forest(trainloader: DataLoader) -> RandomForestClassifier:
     estimator = RandomForestClassifier()
     search = GridSearchCV(
         estimator,
@@ -107,11 +106,21 @@ def train_random_forest(trainloader: DataLoader) -> RandomForestClassifier:
         },
         n_jobs=-1
     )
-    search.fit(X_train, y_train)
+    return train_estimator(search, trainloader).best_estimator_
 
-    return search.best_estimator_
+def train_gradient_boosting(trainloader: DataLoader) -> GradientBoostingClassifier:
+    estimator = GradientBoostingClassifier()
+    search = GridSearchCV(
+        estimator,
+        {'n_estimators': [15, 50, 100, 150],
+              'learning_rate': [0.1, 0.01, 0.001, 0.0001],
+              'subsample': [1.0, 0.5],
+              'max_features': [1, 2, 3, 4]},
+        n_jobs=-1
+    )
+    return train_estimator(search, trainloader).best_estimator_
 
-def test_random_forest(estimator: RandomForestClassifier, testloader: DataLoader):
+def test_estimator(estimator, testloader: DataLoader, name='Random Forest'):
     ALL_X = []
     ALL_Y = []
 
@@ -126,17 +135,21 @@ def test_random_forest(estimator: RandomForestClassifier, testloader: DataLoader
 
     y_pred = estimator.predict(X_test)
 
-    print(f'RF Accuracy: {accuracy_score(y_test, y_pred, normalize=True)}')
-    print(f'RF Recall: {recall_score(y_test, y_pred, average='weighted')}')
-    print(f'RF Precision: {precision_score(y_test, y_pred, average='weighted', zero_division=0)}')
-    print(f'RF F1: {f1_score(y_test, y_pred, average='weighted')}')
+    print(f'{name}:')
+    print(classification_report(y_test, y_pred))
+
+def train_voting(estimators: List, trainloader: DataLoader) -> VotingClassifier:
+    return train_estimator(
+        VotingClassifier(estimators),
+        trainloader
+    )
 
 
 def static_main():
     do_load = True
     do_save = True
     do_train = False
-    do_test = True
+    do_test = False
     
     epochs = 1000
     batch_size = 100
@@ -171,7 +184,11 @@ def static_main():
         )
 
     random_forest = train_random_forest(trainloader)
-    test_random_forest(random_forest, testloader)
+    test_estimator(random_forest, testloader, name='Random Forest')
+    gradient_boosting = train_gradient_boosting(trainloader)
+    test_estimator(gradient_boosting, testloader, name='Gradient Boosting')
+    voting = train_voting([('RF', random_forest), ('GB', gradient_boosting)], trainloader)
+    test_estimator(voting, testloader, name='Voting')
         
 def main():
     # migration()

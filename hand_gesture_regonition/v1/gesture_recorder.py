@@ -1,9 +1,9 @@
 from typing import Optional
 
 import cv2
-from hand_gesture_regonition.gesture import Gesture, GestureLibrary, GestureVarients
-from hand_gesture_regonition.input import Input
-from hand_gesture_regonition.process import Process
+from hand_gesture_regonition.v1.gesture import Gesture, GestureLibrary, GestureVarients
+from hand_gesture_regonition.v1.input import Input
+from hand_gesture_regonition.v1.process import Process
 
 
 class GestureRecorder(Process):

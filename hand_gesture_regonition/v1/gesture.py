@@ -162,7 +162,7 @@ class GestureLibrary:
         ]
         
 def migration():
-    library = GestureLibrary('data')
+    library = GestureLibrary('data/v1')
     for key in library.keys():
         from_variants = library.get(key)
         to_key = '_' + key

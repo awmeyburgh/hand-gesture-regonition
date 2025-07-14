@@ -2,12 +2,12 @@ from typing import List, Optional
 import cv2
 import numpy as np
 
-from hand_gesture_regonition.gesture import GestureLibrary
-from hand_gesture_regonition.gesture_recorder import GestureRecorder
-from hand_gesture_regonition.gesture_regonition import GestureCommands, GestureRegonition
-from hand_gesture_regonition.hands_overlay import HandsOverlay
-from hand_gesture_regonition.input import Input
-from hand_gesture_regonition.process import Process
+from hand_gesture_regonition.v1.gesture import GestureLibrary
+from hand_gesture_regonition.v1.gesture_recorder import GestureRecorder
+from hand_gesture_regonition.v1.gesture_regonition import GestureCommands, GestureRegonition
+from hand_gesture_regonition.v1.hands_overlay import HandsOverlay
+from hand_gesture_regonition.v1.input import Input
+from hand_gesture_regonition.v1.process import Process
 
 
 class Program:
@@ -26,7 +26,7 @@ class Program:
         
         self.input = Input()
         self.hands_overlay = HandsOverlay()
-        self.gesture_library = GestureLibrary('data')
+        self.gesture_library = GestureLibrary('data/v1')
         
         self.processes: List[Process] = [
             self.input,

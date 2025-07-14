@@ -3,10 +3,10 @@ from pathlib import Path
 from typing import List, Tuple
 
 import torch
-from hand_gesture_regonition.gesture import Gesture, GestureLibrary, Hand
+from hand_gesture_regonition.v1.gesture import Gesture, GestureLibrary, Hand
 from torch.utils.data import Dataset
 
-from hand_gesture_regonition.network import StaticGRNetwork
+from hand_gesture_regonition.v1.network import StaticGRNetwork
 
 class GestureLibraryDataset(Dataset):
     def __init__(self, library: GestureLibrary, train=True, train_subset=0.8,static=True):
@@ -57,7 +57,7 @@ class GestureLibraryDataset(Dataset):
         return x, y
     
 def load(train_subset=0.8,static=True) -> Tuple[Dataset, Dataset]:
-    library = GestureLibrary('data')
+    library = GestureLibrary('data/v1')
     
     return (
         GestureLibraryDataset(library, train=True, train_subset=train_subset,static=static),

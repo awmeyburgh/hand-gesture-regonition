@@ -2,7 +2,7 @@ from typing import List, Optional
 from torch import nn
 import torch
 
-from hand_gesture_regonition.gesture import Gesture, GestureLibrary
+from hand_gesture_regonition.v1.gesture import Gesture, GestureLibrary
 
 class StaticGRNetwork(nn.Module):
     __classes = None

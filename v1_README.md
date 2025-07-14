@@ -5,11 +5,11 @@ To be able to detect between different hand gesture and to be able to issue comm
 Instructions:
 
 To train
-`poetry run python main.py trainer`
+`poetry run python v1/main.py trainer`
 
 To run
-`poetry run python main.py`
+`poetry run python v1/main.py`
 
 Goal Reach, can regonize 12 different gestures, 6 on each hand. Was able to turn off my room light with thumb up and down, so accumplish my original ambition
 
-![](<Screenshot from 2025-05-08 17-17-46.png>) ![](<Screenshot from 2025-05-08 17-18-03.png>) ![](<Screenshot from 2025-05-08 17-18-24.png>)
+![](<assets/Screenshot from 2025-05-08 17-17-46.png>) ![](<assets/Screenshot from 2025-05-08 17-18-03.png>) ![](<assets/Screenshot from 2025-05-08 17-18-24.png>)

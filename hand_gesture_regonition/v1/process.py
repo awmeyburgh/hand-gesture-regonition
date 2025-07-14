@@ -14,5 +14,5 @@ class Process(ABC):
     
     @property
     def program(self):
-        from hand_gesture_regonition.program import Program
+        from hand_gesture_regonition.v1.program import Program
         return Program.get()

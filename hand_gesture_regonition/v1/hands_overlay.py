@@ -1,7 +1,7 @@
 import cv2
 from mediapipe.python.solutions import hands, drawing_utils
 
-from hand_gesture_regonition.process import Process
+from hand_gesture_regonition.v1.process import Process
 
 
 class HandsOverlay(Process):

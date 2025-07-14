@@ -1,6 +1,6 @@
 import cv2
 
-from hand_gesture_regonition.process import Process
+from hand_gesture_regonition.v1.process import Process
 
 
 class Input(Process):
@@ -12,7 +12,7 @@ class Input(Process):
     
     @classmethod
     def get(cls) -> "Input":
-        from hand_gesture_regonition.program import Program
+        from hand_gesture_regonition.v1.program import Program
         return Program.get().input
     
     @classmethod

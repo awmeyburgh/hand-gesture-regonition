@@ -8,11 +8,11 @@ import cv2
 import numpy as np
 import torch
 
-from hand_gesture_regonition.gesture import Gesture, GestureLibrary
-from hand_gesture_regonition.gesture_commands import GestureCommands
-from hand_gesture_regonition.home_assistant_commands import HomeAssistantCommands
-from hand_gesture_regonition.network import StaticGRNetwork
-from hand_gesture_regonition.process import Process
+from hand_gesture_regonition.v1.gesture import Gesture, GestureLibrary
+from hand_gesture_regonition.v1.gesture_commands import GestureCommands
+from hand_gesture_regonition.v1.home_assistant_commands import HomeAssistantCommands
+from hand_gesture_regonition.v1.network import StaticGRNetwork
+from hand_gesture_regonition.v1.process import Process
         
     
 class GestureRegonition(Process):

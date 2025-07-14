@@ -1,6 +1,6 @@
 import os
 from homeassistant_api import Client
-from hand_gesture_regonition.gesture_commands import GestureCommands
+from hand_gesture_regonition.v1.gesture_commands import GestureCommands
 
 
 class HomeAssistantCommands(GestureCommands):
