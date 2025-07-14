@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hand Gesture Recognition</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.2/socket.io.js"></script>
+    <style>
+        body {
+            font-family: sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            height: 100vh;
+            background-color: #f0f0f0;
+        }
+        #main-container {
+            display: flex;
+            flex-grow: 1;
+        }
+        #video-container {
+            position: relative;
+            flex-grow: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #000;
+        }
+        #webcam {
+            width: 100%;
+            max-width: 100%;
+            height: auto;
+            transform: scaleX(-1);
+        }
+        #overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+        #sidebar {
+            width: 500px; /* Increased width to accommodate two columns */
+            background-color: #fff;
+            padding: 20px;
+            box-shadow: -2px 0 5px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: row; /* Arrange children in a row */
+            justify-content: space-around; /* Distribute space between items */
+        }
+        #stats-container {
+            flex: 1; /* Allow stats to grow and shrink */
+            margin-right: 10px; /* Add some space between stats and actions */
+        }
+        #actions-container {
+            flex: 1; /* Allow actions to grow and shrink */
+            margin-left: 10px; /* Add some space between stats and actions */
+        }
+        #stats-container {
+            margin-bottom: 20px;
+        }
+        #actions-container button {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+            cursor: pointer;
+        }
+        #actions-container button.recording {
+            border: 2px solid green;
+        }
+        #actions-container button.active {
+            border: 2px solid green;
+        }
+        #actions-container button:hover {
+            background-color: #e0e0e0;
+        }
+        .section-container {
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+        .section-container h3 {
+            margin-top: 0;
+        }
+        .section-container select {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        .section-container.selected {
+            border: 2px solid blue;
+        }
+    </style>
+</head>
+<body>
+    <div id="main-container">
+        <div id="video-container">
+            <video id="webcam" autoplay playsinline></video>
+            <canvas id="overlay"></canvas>
+        </div>
+        <div id="sidebar">
+            <div id="stats-container">
+                <h2>Stats</h2>
+                <p>Gesture: <span id="gesture-stat">...</span></p>
+                <p>Confidence: <span id="confidence-stat">...</span></p>
+            </div>
+            <div id="actions-container">
+                <h2>Actions</h2>
+                <div id="static-gesture-section" class="section-container">
+                    <h3>Static Gestures</h3>
+                    <select id="static-gesture-select">
+                        <option value="left_hand">Left Hand</option>
+                        <option value="left_ok">Left OK</option>
+                        <option value="left_thumb_down">Left Thumb Down</option>
+                        <option value="left_index">Left Index</option>
+                        <option value="left_peace">Left Peace</option>
+                        <option value="left_thumb_up">Left Thumb Up</option>
+                        <option value="right_hand">Right Hand</option>
+                        <option value="right_ok">Right OK</option>
+                        <option value="right_thumb_down">Right Thumb Down</option>
+                        <option value="right_index">Right Index</option>
+                        <option value="right_peace">Right Peace</option>
+                        <option value="right_thumb_up">Right Thumb Up</option>
+                    </select>
+                    <button id="capture-btn">Capture</button>
+                </div>
+                <div id="sequential-gesture-section" class="section-container">
+                    <h3>Sequential Gestures</h3>
+                    <select id="sequential-gesture-select">
+                        <option value="left_wave">Left Wave</option>
+                        <option value="right_wave">Right Wave</option>
+                    </select>
+                    <button id="record-btn">Record</button>
+                </div>
+                <button id="toggle-landmarks-btn">Landmarks</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const video = document.getElementById('webcam');
+        const overlay = document.getElementById('overlay');
+        const context = overlay.getContext('2d');
+        const captureBtn = document.getElementById('capture-btn');
+        const recordBtn = document.getElementById('record-btn');
+        const toggleLandmarksBtn = document.getElementById('toggle-landmarks-btn');
+        const staticGestureSelect = document.getElementById('static-gesture-select');
+        const sequentialGestureSelect = document.getElementById('sequential-gesture-select');
+        const staticGestureSection = document.getElementById('static-gesture-section');
+        const sequentialGestureSection = document.getElementById('sequential-gesture-section');
+
+        let isRecording = false;
+        let recorder;
+        let recordedChunks = [];
+        let landmarksEnabled = true;
+        let selectedSection = null;
+
+        const socket = io();
+
+        // Get access to the webcam
+        if (navigator.mediaDevices.getUserMedia) {
+            navigator.mediaDevices.getUserMedia({ video: true })
+                .then(function (stream) {
+                    video.srcObject = stream;
+                    video.addEventListener('loadedmetadata', () => {
+                        overlay.width = video.clientWidth;
+                        overlay.height = video.clientHeight;
+                        toggleLandmarksBtn.classList.add('active'); // Set active class by default
+                    });
+                })
+                .catch(function (err0r) {
+                    console.log("Something went wrong!");
+                });
+        }
+
+        socket.on('connect', () => {
+            console.log('Connected to server');
+        });
+
+        socket.on('landmarks', (landmarks) => {
+            if (landmarksEnabled) {
+                drawLandmarks(landmarks);
+            }
+        });
+
+        function drawLandmarks(landmarks) {
+            context.clearRect(0, 0, overlay.width, overlay.height);
+            context.fillStyle = 'red';
+            context.strokeStyle = 'green';
+            context.lineWidth = 2;
+
+            const connections = [
+                [0, 1], [1, 2], [2, 3], [3, 4],         // Thumb
+                [0, 5], [5, 6], [6, 7], [7, 8],         // Index finger
+                [0, 9], [9, 10], [10, 11], [11, 12],    // Middle finger
+                [0, 13], [13, 14], [14, 15], [15, 16],  // Ring finger
+                [0, 17], [17, 18], [18, 19], [19, 20]   // Pinky
+            ];
+
+            // Calculate effective video dimensions and offsets
+            const videoAspectRatio = video.videoWidth / video.videoHeight;
+            const containerAspectRatio = video.clientWidth / video.clientHeight;
+
+            let effectiveWidth = video.clientWidth;
+            let effectiveHeight = video.clientHeight;
+            let offsetX = 0;
+            let offsetY = 0;
+
+            if (videoAspectRatio > containerAspectRatio) {
+                // Video is wider than container, letterboxing (horizontal bars)
+                effectiveHeight = video.clientWidth / videoAspectRatio;
+                offsetY = (video.clientHeight - effectiveHeight) / 2;
+            } else {
+                // Video is taller than container, pillarboxing (vertical bars)
+                effectiveWidth = video.clientHeight * videoAspectRatio;
+                offsetX = (video.clientWidth - effectiveWidth) / 2;
+            }
+
+            for (const hand of landmarks) {
+                // Draw points
+                for (const landmark of hand) {
+                    const x = ((1 - landmark.x) * effectiveWidth) + offsetX;
+                    const y = (landmark.y * effectiveHeight) + offsetY;
+                    context.beginPath();
+                    context.arc(x, y, 5, 0, 2 * Math.PI);
+                    context.fill();
+                }
+
+                // Draw connections
+                for (const connection of connections) {
+                    const start = hand[connection[0]];
+                    const end = hand[connection[1]];
+
+                    const startX = ((1 - start.x) * effectiveWidth) + offsetX;
+                    const startY = (start.y * effectiveHeight) + offsetY;
+                    const endX = ((1 - end.x) * effectiveWidth) + offsetX;
+                    const endY = (end.y * effectiveHeight) + offsetY;
+
+                    context.beginPath();
+                    context.moveTo(startX, startY);
+                    context.lineTo(endX, endY);
+                    context.stroke();
+                }
+            }
+        }
+
+        setInterval(() => {
+            if (landmarksEnabled) {
+                const canvas = document.createElement('canvas');
+                canvas.width = video.clientWidth;
+                canvas.height = video.clientHeight;
+                const context = canvas.getContext('2d');
+                context.drawImage(video, 0, 0, canvas.width, canvas.height);
+                const dataURL = canvas.toDataURL('image/jpeg');
+                socket.emit('image', dataURL);
+            }
+        }, 100); // Send an image every 100ms
+
+        captureBtn.addEventListener('click', performCapture);
+
+        recordBtn.addEventListener('click', () => {
+            if (!isRecording) {
+                startRecording();
+            } else {
+                stopRecording();
+            }
+        });
+
+        toggleLandmarksBtn.addEventListener('click', () => {
+            landmarksEnabled = !landmarksEnabled;
+            if (landmarksEnabled) {
+                toggleLandmarksBtn.classList.add('active');
+            } else {
+                toggleLandmarksBtn.classList.remove('active');
+                context.clearRect(0, 0, overlay.width, overlay.height);
+            }
+        });
+
+        function performCapture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = video.clientWidth;
+            canvas.height = video.clientHeight;
+            const context = canvas.getContext('2d');
+            context.translate(canvas.width, 0);
+            context.scale(-1, 1);
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const dataURL = canvas.toDataURL('image/png');
+
+            fetch('/capture', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ image: dataURL, gesture: staticGestureSelect.value })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Success:', data);
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+            });
+        }
+
+        function startRecording() {
+            isRecording = true;
+            recordBtn.classList.add('recording');
+            recordBtn.textContent = 'Stop';
+            recordedChunks = [];
+
+            const stream = video.srcObject;
+            recorder = new MediaRecorder(stream);
+
+            recorder.ondataavailable = event => {
+                if (event.data.size > 0) {
+                    recordedChunks.push(event.data);
+                }
+            };
+
+            recorder.onstop = () => {
+                const blob = new Blob(recordedChunks, { type: 'video/webm' });
+                // Send the recording to the server
+                const formData = new FormData();
+                formData.append('video', blob);
+                formData.append('gesture', sequentialGestureSelect.value);
+
+                fetch('/record', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Success:', data);
+                })
+                .catch((error) => {
+                    console.error('Error:', error);
+                });
+            };
+
+            recorder.start();
+        }
+
+        function stopRecording() {
+            isRecording = false;
+            recordBtn.classList.remove('recording');
+            recordBtn.textContent = 'Record';
+            recorder.stop();
+        }
+
+        // Section selection logic
+        staticGestureSection.addEventListener('click', () => {
+            if (selectedSection === staticGestureSection) {
+                staticGestureSection.classList.remove('selected');
+                selectedSection = null;
+            } else {
+                if (selectedSection) {
+                    selectedSection.classList.remove('selected');
+                }
+                staticGestureSection.classList.add('selected');
+                selectedSection = staticGestureSection;
+            }
+        });
+
+        sequentialGestureSection.addEventListener('click', () => {
+            if (selectedSection === sequentialGestureSection) {
+                sequentialGestureSection.classList.remove('selected');
+                selectedSection = null;
+            } else {
+                if (selectedSection) {
+                    selectedSection.classList.remove('selected');
+                }
+                sequentialGestureSection.classList.add('selected');
+                selectedSection = sequentialGestureSection;
+            }
+        });
+
+        // Keyboard navigation for dropdowns
+        document.addEventListener('keydown', (event) => {
+            if (selectedSection) {
+                const selectElement = selectedSection.querySelector('select');
+                if (selectElement) {
+                    let currentIndex = selectElement.selectedIndex;
+                    if (event.key === 'ArrowLeft') {
+                        event.preventDefault(); // Prevent page scrolling
+                        currentIndex = (currentIndex - 1 + selectElement.options.length) % selectElement.options.length;
+                    } else if (event.key === 'ArrowRight') {
+                        event.preventDefault(); // Prevent page scrolling
+                        currentIndex = (currentIndex + 1) % selectElement.options.length;
+                    } else if (event.key === ' ') { // Spacebar
+                        event.preventDefault(); // Prevent default spacebar action (e.g., scrolling)
+                        if (selectedSection === staticGestureSection) {
+                            performCapture();
+                        } else if (selectedSection === sequentialGestureSection) {
+                            if (!isRecording) {
+                                startRecording();
+                            } else {
+                                stopRecording();
+                            }
+                        }
+                    }
+                    selectElement.selectedIndex = currentIndex;
+                }
+            }
+        });
+    </script>
+</body>
+</html>
