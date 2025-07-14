@@ -1,0 +1,53 @@
+
+<h2 class="text-xl font-bold mb-4">Models</h2>
+<div>
+    <!-- Model Selection -->
+    <div class="mb-4">
+        <label for="model-select" class="block text-sm font-medium text-gray-700">Select Model:</label>
+        <select id="model-select" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+            <!-- Options will be dynamically loaded here -->
+        </select>
+    </div>
+
+    <!-- Meta Parameters -->
+    <div class="mb-4">
+        <h3 class="text-lg font-semibold mb-2">Meta Parameters</h3>
+        <div class="flex items-center mb-2">
+            <input type="checkbox" id="save-model-checkbox" class="h-4 w-4 text-blue-600 border-gray-300 rounded" checked>
+            <label for="save-model-checkbox" class="ml-2 block text-sm text-gray-900">Save Model</label>
+        </div>
+        <div class="flex items-center">
+            <input type="checkbox" id="load-model-checkbox" class="h-4 w-4 text-blue-600 border-gray-300 rounded" checked>
+            <label for="load-model-checkbox" class="ml-2 block text-sm text-gray-900">Load Model</label>
+        </div>
+        <div class="mt-4">
+            <label for="train-size-slider" class="block text-sm font-medium text-gray-700">Train Set Size: <span id="train-size-value">70</span>%</label>
+            <input type="range" id="train-size-slider" min="0" max="100" value="70" step="1" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700">
+        </div>
+    </div>
+
+    <!-- Hyper Parameters -->
+    <div class="mb-4">
+        <h3 class="text-lg font-semibold mb-2">Hyper Parameters</h3>
+        <div id="hyperparameters-container" class="space-y-3">
+            <!-- Hyperparameters will be dynamically loaded here -->
+        </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="mb-4">
+        <h3 class="text-lg font-semibold mb-2">Actions</h3>
+        <div class="flex space-x-4">
+            <button id="train-model-btn" class="flex-1 bg-green-500 text-white py-2 px-4 rounded-md hover:bg-green-600 transition-colors">Train</button>
+            <button id="test-model-btn" class="flex-1 bg-purple-500 text-white py-2 px-4 rounded-md hover:bg-purple-600 transition-colors">Test</button>
+        </div>
+    </div>
+
+    <!-- Console Output -->
+    <div class="mb-4">
+        <h3 class="text-lg font-semibold mb-2">Console Output</h3>
+        <div id="console-output" class="bg-gray-800 text-white p-3 rounded-md h-48 overflow-y-auto text-xs font-mono">
+            <!-- Console output will appear here -->
+        </div>
+    </div>
+</div>

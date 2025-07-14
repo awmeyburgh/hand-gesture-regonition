@@ -1,0 +1,21 @@
+models:
+  - 
+    type: "Static"
+    name: "Logistic Regression"
+    key: "static/logistic_regression"
+    filename: "logistic_regression.pickle"
+    parameters:
+      penalty:
+        type: enum
+        default: l2
+        values:
+          - l1
+          - l2
+          - elasticnet
+      C:
+        type: float
+        default: 1
+      max_iter:
+        type: int
+        default: 100
+          

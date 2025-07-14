@@ -5,165 +5,189 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hand Gesture Recognition</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.2/socket.io.js"></script>
-    <style>
-        body {
-            font-family: sans-serif;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            height: 100vh;
-            background-color: #f0f0f0;
-        }
-        #main-container {
-            display: flex;
-            flex-grow: 1;
-        }
-        #video-container {
-            position: relative;
-            flex-grow: 1;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background-color: #000;
-        }
-        #webcam {
-            width: 100%;
-            max-width: 100%;
-            height: auto;
-            transform: scaleX(-1);
-        }
-        #overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-        }
-        #sidebar {
-            width: 500px; /* Increased width to accommodate two columns */
-            background-color: #fff;
-            padding: 20px;
-            box-shadow: -2px 0 5px rgba(0,0,0,0.1);
-            display: flex;
-            flex-direction: row; /* Arrange children in a row */
-            justify-content: space-around; /* Distribute space between items */
-        }
-        #stats-container {
-            flex: 1; /* Allow stats to grow and shrink */
-            margin-right: 10px; /* Add some space between stats and actions */
-        }
-        #actions-container {
-            flex: 1; /* Allow actions to grow and shrink */
-            margin-left: 10px; /* Add some space between stats and actions */
-        }
-        #stats-container {
-            margin-bottom: 20px;
-        }
-        #actions-container button {
-            display: block;
-            width: 100%;
-            padding: 10px;
-            margin-bottom: 10px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            background-color: #f9f9f9;
-            cursor: pointer;
-        }
-        #actions-container button.recording {
-            border: 2px solid green;
-        }
-        #actions-container button.active {
-            border: 2px solid green;
-        }
-        #actions-container button:hover {
-            background-color: #e0e0e0;
-        }
-        .section-container {
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            padding: 10px;
-            margin-bottom: 10px;
-        }
-        .section-container h3 {
-            margin-top: 0;
-        }
-        .section-container select {
-            width: 100%;
-            padding: 8px;
-            margin-bottom: 10px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-        }
-        .section-container.selected {
-            border: 2px solid blue;
-        }
-    </style>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
 </head>
 <body>
-    <div id="main-container">
-        <div id="video-container">
-            <video id="webcam" autoplay playsinline></video>
-            <canvas id="overlay"></canvas>
-        </div>
-        <div id="sidebar">
-            <div id="stats-container">
-                <h2>Stats</h2>
-                <p>Gesture: <span id="gesture-stat">...</span></p>
-                <p>Confidence: <span id="confidence-stat">...</span></p>
+    <div class="flex h-screen bg-gray-100">
+        <!-- Sidebar -->
+        <div class="w-20 bg-gray-800 flex flex-col items-center py-4 space-y-4">
+            <div class="sidebar-item cursor-pointer text-white text-center" data-panel="config-panel">
+                <span class="text-2xl">⚙️</span>
+                <p class="text-xs">Config</p>
             </div>
-            <div id="actions-container">
-                <h2>Actions</h2>
-                <div id="static-gesture-section" class="section-container">
-                    <h3>Static Gestures</h3>
-                    <select id="static-gesture-select">
-                        <option value="left_hand">Left Hand</option>
-                        <option value="left_ok">Left OK</option>
-                        <option value="left_thumb_down">Left Thumb Down</option>
-                        <option value="left_index">Left Index</option>
-                        <option value="left_peace">Left Peace</option>
-                        <option value="left_thumb_up">Left Thumb Up</option>
-                        <option value="right_hand">Right Hand</option>
-                        <option value="right_ok">Right OK</option>
-                        <option value="right_thumb_down">Right Thumb Down</option>
-                        <option value="right_index">Right Index</option>
-                        <option value="right_peace">Right Peace</option>
-                        <option value="right_thumb_up">Right Thumb Up</option>
-                    </select>
-                    <button id="capture-btn">Capture</button>
+            <div class="sidebar-item cursor-pointer text-white text-center" data-panel="data-collection-panel">
+                <span class="text-2xl">📊</span>
+                <p class="text-xs">Data</p>
+            </div>
+            <div class="sidebar-item cursor-pointer text-white text-center" data-panel="models-panel">
+                <span class="text-2xl">🧠</span>
+                <p class="text-xs">Models</p>
+            </div>
+        </div>
+
+        <!-- Main Content Area -->
+        <div class="flex-1 flex flex-col">
+            <!-- Stats Overlay -->
+            <div id="stats-overlay" class="absolute top-4 right-4 bg-white p-4 rounded-lg shadow-lg z-10">
+                <h2 class="text-lg font-semibold">Stats</h2>
+                <div id="gesture-stats-container">
+                    <p>Hand 1 Gesture: <span id="gesture-stat-1" class="font-medium text-gray-400">N/A</span></p>
+                    <p>Hand 2 Gesture: <span id="gesture-stat-2" class="font-medium text-gray-400">N/A</span></p>
                 </div>
-                <div id="sequential-gesture-section" class="section-container">
-                    <h3>Sequential Gestures</h3>
-                    <select id="sequential-gesture-select">
-                        <option value="left_wave">Left Wave</option>
-                        <option value="right_wave">Right Wave</option>
-                    </select>
-                    <button id="record-btn">Record</button>
+                <div id="confidence-stats-container">
+                    <p>Hand 1 Confidence: <span id="confidence-stat-1" class="font-medium text-gray-400">N/A</span></p>
+                    <p>Hand 2 Confidence: <span id="confidence-stat-2" class="font-medium text-gray-400">N/A</span></p>
                 </div>
-                <button id="toggle-landmarks-btn">Landmarks</button>
+            </div>
+
+            <div id="metrics-overlay" class="absolute top-[200px] right-4 bg-white p-4 rounded-lg shadow-lg z-10 hidden">
+                <h2 class="text-lg font-semibold">Metrics</h2>
+                <p>Accuracy: <span id="accuracy-stat" class="font-medium">...</span></p>
+                <p>Precision: <span id="precision-stat" class="font-medium">...</span></p>
+                <p>Recall: <span id="recall-stat" class="font-medium">...</span></p>
+                <p>F1 Score: <span id="f1-score-stat" class="font-medium">...</span></p>
+                
+            </div>
+
+            <div class="flex flex-1">
+                <!-- Panels Container -->
+                <div class="w-96 bg-white p-6 shadow-lg overflow-y-auto hidden" id="config-panel">
+                    <h2 class="text-xl font-bold mb-4">Config</h2>
+                    <div class="mb-4">
+                        <label for="model-select-config" class="block text-sm font-medium text-gray-700">Select Model:</label>
+                        <select id="model-select-config" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                            <!-- Options will be dynamically loaded here -->
+                        </select>
+                    </div>
+                    <div class="mb-4">
+                        <label for="min-confidence-slider" class="block text-sm font-medium text-gray-700">Min Confidence: <span id="min-confidence-value">80</span>%</label>
+                        <input type="range" id="min-confidence-slider" min="0" max="100" value="80" class="mt-1 w-full">
+                    </div>
+                    <div class="mb-4">
+                        <button id="toggle-landmarks-btn" class="w-full bg-blue-500 text-white py-2 px-4 rounded-md transition-colors">Landmarks</button>
+                    </div>
+                </div>
+
+                <div class="w-96 bg-white p-6 shadow-lg overflow-y-auto hidden" id="data-collection-panel">
+                    <h2 class="text-xl font-bold mb-4">Data Collection</h2>
+                    <div id="static-gesture-section" class="border border-gray-300 rounded-md p-4 mb-4">
+                        <h3 class="text-lg font-semibold mb-2">Static Gestures</h3>
+                        <select id="static-gesture-select" class="gesture-select w-full p-2 border border-gray-300 rounded-md mb-2">
+                            <option value="left_hand">Left Hand</option>
+                            <option value="left_ok">Left OK</option>
+                            <option value="left_thumb_down">Left Thumb Down</option>
+                            <option value="left_index">Left Index</option>
+                            <option value="left_peace">Left Peace</option>
+                            <option value="left_thumb_up">Left Thumb Up</option>
+                            <option value="right_hand">Right Hand</option>
+                            <option value="right_ok">Right OK</option>
+                            <option value="right_thumb_down">Right Thumb Down</option>
+                            <option value="right_index">Right Index</option>
+                            <option value="right_peace">Right Peace</option>
+                            <option value="right_thumb_up">Right Thumb Up</option>
+                        </select>
+                        <button id="capture-btn" class="w-full bg-green-500 text-white py-2 px-4 rounded-md hover:bg-green-600 transition-colors">Capture</button>
+                        <div class="mt-2">
+                            <button id="compile-static-btn" class="w-full bg-purple-500 text-white py-2 px-4 rounded-md hover:bg-purple-600 transition-colors relative flex items-center justify-center space-x-2">
+                                <span id="compile-static-text">Compile</span>
+                                <span id="compile-static-spinner" class="hidden">
+                                    <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                </span>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="sequential-gesture-section" class="gesture-section border border-gray-300 rounded-md p-4">
+                        <h3 class="text-lg font-semibold mb-2">Sequential Gestures</h3>
+                        <select id="sequential-gesture-select" class="w-full p-2 border border-gray-300 rounded-md mb-2">
+                            <option value="left_wave">Left Wave</option>
+                            <option value="right_wave">Right Wave</option>
+                        </select>
+                        <button id="record-btn" class="w-full bg-red-500 text-white py-2 px-4 rounded-md hover:bg-red-600 transition-colors">Record</button>
+                        <div class="mt-2">
+                            <button id="compile-sequential-btn" class="w-full bg-purple-500 text-white py-2 px-4 rounded-md hover:bg-purple-600 transition-colors relative flex items-center justify-center space-x-2">
+                                <span id="compile-sequential-text">Compile</span>
+                                <span id="compile-sequential-spinner" class="hidden">
+                                    <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                </span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="w-96 bg-white p-6 shadow-lg overflow-y-auto flex flex-col hidden h-full" id="models-panel">
+                    {% include 'models_tab.html' %}
+                </div>
+
+                <!-- Webcam View -->
+                <div class="flex-1 flex items-center justify-center bg-gray-200 p-4 relative">
+                    <div class="relative" style="width: 100%; padding-bottom: 75%; height: 0;">
+                        <video id="webcam" autoplay playsinline class="absolute top-0 left-0 w-full h-full object-contain"></video>
+                        <canvas id="overlay" class="absolute top-0 left-0 w-full h-full"></canvas>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
+        const socket = io();
+
         const video = document.getElementById('webcam');
         const overlay = document.getElementById('overlay');
         const context = overlay.getContext('2d');
         const captureBtn = document.getElementById('capture-btn');
         const recordBtn = document.getElementById('record-btn');
+        const compileStaticBtn = document.getElementById('compile-static-btn');
+        const compileSequentialBtn = document.getElementById('compile-sequential-btn');
+
+        compileStaticBtn.addEventListener('click', () => {
+            document.getElementById('compile-static-text').classList.add('hidden');
+            document.getElementById('compile-static-spinner').classList.remove('hidden');
+            socket.emit('compile_static_dataset');
+        });
+
+        compileSequentialBtn.addEventListener('click', () => {
+            document.getElementById('compile-sequential-text').classList.add('hidden');
+            document.getElementById('compile-sequential-spinner').classList.remove('hidden');
+            socket.emit('compile_sequential_dataset');
+        });
+
+        socket.on('compile_static_complete', () => {
+            document.getElementById('compile-static-spinner').classList.add('hidden');
+            document.getElementById('compile-static-text').classList.remove('hidden');
+        });
+
+        socket.on('compile_sequential_complete', () => {
+            document.getElementById('compile-sequential-spinner').classList.add('hidden');
+            document.getElementById('compile-sequential-text').classList.remove('hidden');
+        });
         const toggleLandmarksBtn = document.getElementById('toggle-landmarks-btn');
         const staticGestureSelect = document.getElementById('static-gesture-select');
+        const minConfidenceSlider = document.getElementById('min-confidence-slider');
+        const minConfidenceValue = document.getElementById('min-confidence-value');
+
+        minConfidenceSlider.addEventListener('input', () => {
+            minConfidenceValue.textContent = minConfidenceSlider.value;
+        });
         const sequentialGestureSelect = document.getElementById('sequential-gesture-select');
-        const staticGestureSection = document.getElementById('static-gesture-section');
-        const sequentialGestureSection = document.getElementById('sequential-gesture-section');
+
+        const gestureStat1 = document.getElementById('gesture-stat-1');
+        const gestureStat2 = document.getElementById('gesture-stat-2');
+        const confidenceStat1 = document.getElementById('confidence-stat-1');
+        const confidenceStat2 = document.getElementById('confidence-stat-2');
 
         let isRecording = false;
         let recorder;
         let recordedChunks = [];
         let landmarksEnabled = true;
-        let selectedSection = null;
-
-        const socket = io();
 
         // Get access to the webcam
         if (navigator.mediaDevices.getUserMedia) {
@@ -171,9 +195,12 @@
                 .then(function (stream) {
                     video.srcObject = stream;
                     video.addEventListener('loadedmetadata', () => {
-                        overlay.width = video.clientWidth;
-                        overlay.height = video.clientHeight;
-                        toggleLandmarksBtn.classList.add('active'); // Set active class by default
+                        // Adjust canvas size to match video element's displayed size
+                        const videoRect = video.getBoundingClientRect();
+                        overlay.width = videoRect.width;
+                        overlay.height = videoRect.height;
+                        video.style.transform = 'scaleX(-1)'; // Apply flip via JavaScript
+                        toggleLandmarksBtn.classList.add('bg-green-500'); // Set active class by default
                     });
                 })
                 .catch(function (err0r) {
@@ -185,9 +212,39 @@
             console.log('Connected to server');
         });
 
-        socket.on('landmarks', (landmarks) => {
+        socket.on('landmarks', (data) => {
+            const { landmarks, predictions } = data;
             if (landmarksEnabled) {
                 drawLandmarks(landmarks);
+            } else {
+                context.clearRect(0, 0, overlay.width, overlay.height);
+            }
+
+            // Reset stats for both hands
+            gestureStat1.textContent = 'N/A';
+            gestureStat1.classList.add('text-gray-400');
+            confidenceStat1.textContent = 'N/A';
+            confidenceStat1.classList.add('text-gray-400');
+
+            gestureStat2.textContent = 'N/A';
+            gestureStat2.classList.add('text-gray-400');
+            confidenceStat2.textContent = 'N/A';
+            confidenceStat2.classList.add('text-gray-400');
+
+            if (predictions && predictions.length > 0) {
+                predictions.forEach((prediction, index) => {
+                    if (index === 0) {
+                        gestureStat1.textContent = prediction.gesture;
+                        gestureStat1.classList.remove('text-gray-400');
+                        confidenceStat1.textContent = prediction.confidence.toFixed(2);
+                        confidenceStat1.classList.remove('text-gray-400');
+                    } else if (index === 1) {
+                        gestureStat2.textContent = prediction.gesture;
+                        gestureStat2.classList.remove('text-gray-400');
+                        confidenceStat2.textContent = prediction.confidence.toFixed(2);
+                        confidenceStat2.classList.remove('text-gray-400');
+                    }
+                });
             }
         });
 
@@ -206,29 +263,16 @@
             ];
 
             // Calculate effective video dimensions and offsets
-            const videoAspectRatio = video.videoWidth / video.videoHeight;
-            const containerAspectRatio = video.clientWidth / video.clientHeight;
-
-            let effectiveWidth = video.clientWidth;
-            let effectiveHeight = video.clientHeight;
-            let offsetX = 0;
-            let offsetY = 0;
-
-            if (videoAspectRatio > containerAspectRatio) {
-                // Video is wider than container, letterboxing (horizontal bars)
-                effectiveHeight = video.clientWidth / videoAspectRatio;
-                offsetY = (video.clientHeight - effectiveHeight) / 2;
-            } else {
-                // Video is taller than container, pillarboxing (vertical bars)
-                effectiveWidth = video.clientHeight * videoAspectRatio;
-                offsetX = (video.clientWidth - effectiveWidth) / 2;
-            }
+            const videoRect = video.getBoundingClientRect();
+            const effectiveWidth = videoRect.width;
+            const effectiveHeight = videoRect.height;
+            const offsetX = 0; // Since object-contain handles centering, no manual offset needed for drawing
 
             for (const hand of landmarks) {
                 // Draw points
                 for (const landmark of hand) {
-                    const x = ((1 - landmark.x) * effectiveWidth) + offsetX;
-                    const y = (landmark.y * effectiveHeight) + offsetY;
+                    const x = (landmark.x * effectiveWidth) + offsetX;
+                    const y = (landmark.y * effectiveHeight);
                     context.beginPath();
                     context.arc(x, y, 5, 0, 2 * Math.PI);
                     context.fill();
@@ -239,10 +283,10 @@
                     const start = hand[connection[0]];
                     const end = hand[connection[1]];
 
-                    const startX = ((1 - start.x) * effectiveWidth) + offsetX;
-                    const startY = (start.y * effectiveHeight) + offsetY;
-                    const endX = ((1 - end.x) * effectiveWidth) + offsetX;
-                    const endY = (end.y * effectiveHeight) + offsetY;
+                    const startX = (start.x * effectiveWidth) + offsetX;
+                    const startY = (start.y * effectiveHeight);
+                    const endX = (end.x * effectiveWidth) + offsetX;
+                    const endY = (end.y * effectiveHeight);
 
                     context.beginPath();
                     context.moveTo(startX, startY);
@@ -253,14 +297,18 @@
         }
 
         setInterval(() => {
-            if (landmarksEnabled) {
+            if (video.readyState === video.HAVE_ENOUGH_DATA) {
                 const canvas = document.createElement('canvas');
-                canvas.width = video.clientWidth;
-                canvas.height = video.clientHeight;
-                const context = canvas.getContext('2d');
-                context.drawImage(video, 0, 0, canvas.width, canvas.height);
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                const ctx = canvas.getContext('2d');
+                ctx.translate(canvas.width, 0);
+                ctx.scale(-1, 1);
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
                 const dataURL = canvas.toDataURL('image/jpeg');
-                socket.emit('image', dataURL);
+                const selectedModelKey = modelSelectConfig.value;
+                const minConfidence = parseInt(minConfidenceSlider.value);
+                socket.emit('image', dataURL, { model_key: selectedModelKey, min_confidence: minConfidence });
             }
         }, 100); // Send an image every 100ms
 
@@ -277,21 +325,23 @@
         toggleLandmarksBtn.addEventListener('click', () => {
             landmarksEnabled = !landmarksEnabled;
             if (landmarksEnabled) {
-                toggleLandmarksBtn.classList.add('active');
+                toggleLandmarksBtn.classList.remove('bg-red-500');
+                toggleLandmarksBtn.classList.add('bg-green-500');
             } else {
-                toggleLandmarksBtn.classList.remove('active');
+                toggleLandmarksBtn.classList.remove('bg-green-500');
+                toggleLandmarksBtn.classList.add('bg-red-500');
                 context.clearRect(0, 0, overlay.width, overlay.height);
             }
         });
 
         function performCapture() {
             const canvas = document.createElement('canvas');
-            canvas.width = video.clientWidth;
-            canvas.height = video.clientHeight;
-            const context = canvas.getContext('2d');
-            context.translate(canvas.width, 0);
-            context.scale(-1, 1);
-            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.translate(canvas.width, 0);
+            ctx.scale(-1, 1);
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
             const dataURL = canvas.toDataURL('image/png');
 
             fetch('/capture', {
@@ -312,8 +362,9 @@
 
         function startRecording() {
             isRecording = true;
-            recordBtn.classList.add('recording');
-            recordBtn.textContent = 'Stop';
+            recordBtn.classList.add('bg-red-600');
+            recordBtn.classList.remove('bg-red-500');
+            recordBtn.textContent = 'Stop Recording';
             recordedChunks = [];
 
             const stream = video.srcObject;
@@ -327,7 +378,6 @@
 
             recorder.onstop = () => {
                 const blob = new Blob(recordedChunks, { type: 'video/webm' });
-                // Send the recording to the server
                 const formData = new FormData();
                 formData.append('video', blob);
                 formData.append('gesture', sequentialGestureSelect.value);
@@ -350,65 +400,255 @@
 
         function stopRecording() {
             isRecording = false;
-            recordBtn.classList.remove('recording');
+            recordBtn.classList.remove('bg-red-600');
+            recordBtn.classList.add('bg-red-500');
             recordBtn.textContent = 'Record';
             recorder.stop();
         }
 
-        // Section selection logic
-        staticGestureSection.addEventListener('click', () => {
-            if (selectedSection === staticGestureSection) {
-                staticGestureSection.classList.remove('selected');
-                selectedSection = null;
-            } else {
-                if (selectedSection) {
-                    selectedSection.classList.remove('selected');
-                }
-                staticGestureSection.classList.add('selected');
-                selectedSection = staticGestureSection;
+        // Sidebar and Panel Logic
+        const sidebarItems = document.querySelectorAll('.sidebar-item');
+        const panels = document.querySelectorAll('[id$="-panel"]'); // Selects all elements with IDs ending in "-panel"
+
+        sidebarItems.forEach(item => {
+            item.addEventListener('click', () => {
+                const targetPanelId = item.dataset.panel;
+
+                panels.forEach(panel => {
+                    if (panel.id === targetPanelId) {
+                        panel.classList.remove('hidden');
+                    } else {
+                        panel.classList.add('hidden');
+                    }
+                });
+            });
+        });
+
+        // Initial state: show config panel by default
+        document.getElementById('config-panel').classList.remove('hidden');
+        document.querySelector('.sidebar-item[data-panel="config-panel"]').classList.add('bg-gray-700'); // Highlight active sidebar item
+
+        // Keyboard navigation for data collection
+        const staticGestureSection = document.getElementById('static-gesture-section');
+        const sequentialGestureSection = document.getElementById('sequential-gesture-section');
+        let activeGestureSection = null;
+
+        function setActiveGestureSection(section) {
+            if (activeGestureSection) {
+                activeGestureSection.classList.remove('border-blue-500', 'border-4');
+                activeGestureSection.classList.add('border-gray-300', 'border');
             }
+            activeGestureSection = section;
+            activeGestureSection.classList.remove('border-gray-300', 'border');
+            activeGestureSection.classList.add('border-blue-500', 'border-4');
+        }
+
+        // Set initial active section when data collection panel is shown
+        document.querySelector('.sidebar-item[data-panel="data-collection-panel"]').addEventListener('click', () => {
+            setActiveGestureSection(staticGestureSection);
+        });
+
+        staticGestureSection.addEventListener('click', () => {
+            setActiveGestureSection(staticGestureSection);
         });
 
         sequentialGestureSection.addEventListener('click', () => {
-            if (selectedSection === sequentialGestureSection) {
-                sequentialGestureSection.classList.remove('selected');
-                selectedSection = null;
-            } else {
-                if (selectedSection) {
-                    selectedSection.classList.remove('selected');
+            setActiveGestureSection(sequentialGestureSection);
+        });
+
+        document.addEventListener('keydown', (event) => {
+            if (document.getElementById('data-collection-panel').classList.contains('hidden')) {
+                return; // Only enable keyboard navigation when data collection panel is active
+            }
+
+            if (event.key === 'ArrowLeft') {
+                if (activeGestureSection === staticGestureSection) {
+                    staticGestureSelect.selectedIndex = (staticGestureSelect.selectedIndex - 1 + staticGestureSelect.options.length) % staticGestureSelect.options.length;
+                } else if (activeGestureSection === sequentialGestureSection) {
+                    sequentialGestureSelect.selectedIndex = (sequentialGestureSelect.selectedIndex - 1 + sequentialGestureSelect.options.length) % sequentialGestureSelect.options.length;
                 }
-                sequentialGestureSection.classList.add('selected');
-                selectedSection = sequentialGestureSection;
+            } else if (event.key === 'ArrowRight') {
+                if (activeGestureSection === staticGestureSection) {
+                    staticGestureSelect.selectedIndex = (staticGestureSelect.selectedIndex + 1) % staticGestureSelect.options.length;
+                } else if (activeGestureSection === sequentialGestureSection) {
+                    sequentialGestureSelect.selectedIndex = (sequentialGestureSelect.selectedIndex + 1) % sequentialGestureSelect.options.length;
+                }
+            } else if (event.key === ' ') { // Spacebar
+                event.preventDefault(); // Prevent scrolling
+                if (activeGestureSection === staticGestureSection) {
+                    captureBtn.click();
+                } else if (activeGestureSection === sequentialGestureSection) {
+                    recordBtn.click();
+                }
             }
         });
 
-        // Keyboard navigation for dropdowns
-        document.addEventListener('keydown', (event) => {
-            if (selectedSection) {
-                const selectElement = selectedSection.querySelector('select');
-                if (selectElement) {
-                    let currentIndex = selectElement.selectedIndex;
-                    if (event.key === 'ArrowLeft') {
-                        event.preventDefault(); // Prevent page scrolling
-                        currentIndex = (currentIndex - 1 + selectElement.options.length) % selectElement.options.length;
-                    } else if (event.key === 'ArrowRight') {
-                        event.preventDefault(); // Prevent page scrolling
-                        currentIndex = (currentIndex + 1) % selectElement.options.length;
-                    } else if (event.key === ' ') { // Spacebar
-                        event.preventDefault(); // Prevent default spacebar action (e.g., scrolling)
-                        if (selectedSection === staticGestureSection) {
-                            performCapture();
-                        } else if (selectedSection === sequentialGestureSection) {
-                            if (!isRecording) {
-                                startRecording();
-                            } else {
-                                stopRecording();
-                            }
+        // Models Tab Logic
+        const modelSelect = document.getElementById('model-select');
+        const modelSelectConfig = document.getElementById('model-select-config');
+        const hyperparametersContainer = document.getElementById('hyperparameters-container');
+        let modelsConfig = {};
+
+        async function fetchModelsConfig() {
+            try {
+                const response = await fetch('/api/models/config');
+                modelsConfig = await response.json();
+                populateModelSelect(modelsConfig.models);
+            } catch (error) {
+                console.error('Error fetching models config:', error);
+            }
+        }
+
+        function populateModelSelect(models) {
+            modelSelect.innerHTML = '';
+            modelSelectConfig.innerHTML = '';
+            models.forEach(model => {
+                const option = document.createElement('option');
+                option.value = model.key;
+                option.textContent = `${model.type} / ${model.name}`;
+                modelSelect.appendChild(option);
+
+                const optionConfig = document.createElement('option');
+                optionConfig.value = model.key;
+                optionConfig.textContent = `${model.type} / ${model.name}`;
+                modelSelectConfig.appendChild(optionConfig);
+            });
+            // Trigger change to load initial hyperparameters
+            modelSelect.dispatchEvent(new Event('change'));
+        }
+
+        function renderHyperparameters(selectedModel) {
+            hyperparametersContainer.innerHTML = '';
+            if (!selectedModel || !selectedModel.parameters) {
+                return;
+            }
+
+            for (const key in selectedModel.parameters) {
+                const param = selectedModel.parameters[key];
+                const paramDiv = document.createElement('div');
+                paramDiv.classList.add('flex', 'items-center', 'space-x-2');
+
+                const label = document.createElement('label');
+                label.classList.add('block', 'text-sm', 'font-medium', 'text-gray-700', 'w-1/3');
+                label.textContent = `${key} (${param.type}):`;
+                paramDiv.appendChild(label);
+
+                let inputElement;
+                if (param.type === 'enum') {
+                    inputElement = document.createElement('select');
+                    inputElement.classList.add('mt-1', 'block', 'w-2/3', 'p-2', 'border', 'border-gray-300', 'rounded-md', 'shadow-sm');
+                    param.values.forEach(value => {
+                        const option = document.createElement('option');
+                        option.value = value;
+                        option.textContent = value;
+                        inputElement.appendChild(option);
+                    });
+                } else {
+                    inputElement = document.createElement('input');
+                    inputElement.classList.add('mt-1', 'block', 'w-2/3', 'p-2', 'border', 'border-gray-300', 'rounded-md', 'shadow-sm');
+                    inputElement.type = (param.type === 'int' || param.type === 'float') ? 'number' : 'text';
+                }
+                inputElement.value = param.default;
+                inputElement.id = `param-${key}`;
+                paramDiv.appendChild(inputElement);
+                hyperparametersContainer.appendChild(paramDiv);
+            }
+        }
+
+        modelSelect.addEventListener('change', (event) => {
+            const selectedModelKey = event.target.value;
+            const selectedModel = modelsConfig.models.find(model => model.key === selectedModelKey);
+            renderHyperparameters(selectedModel);
+        });
+
+        // Fetch config on page load
+        fetchModelsConfig();
+
+        // Console output for models tab (placeholder for now)
+        const consoleOutput = document.getElementById('console-output');
+        function logToConsole(message) {
+            const p = document.createElement('p');
+            p.textContent = `> ${message}`;
+            consoleOutput.appendChild(p);
+            consoleOutput.scrollTop = consoleOutput.scrollHeight; // Auto-scroll to bottom
+        }
+
+        // Example usage:
+        logToConsole('Models tab initialized.');
+        logToConsole('Waiting for model selection...');
+
+        // Action buttons for models tab
+        const trainModelBtn = document.getElementById('train-model-btn');
+        const testModelBtn = document.getElementById('test-model-btn');
+        const saveModelCheckbox = document.getElementById('save-model-checkbox');
+        const loadModelCheckbox = document.getElementById('load-model-checkbox');
+        const trainSizeSlider = document.getElementById('train-size-slider');
+        const trainSizeValue = document.getElementById('train-size-value');
+
+        trainSizeSlider.addEventListener('input', () => {
+            trainSizeValue.textContent = trainSizeSlider.value;
+        });
+
+        trainModelBtn.addEventListener('click', () => {
+            runModelAction('train');
+        });
+
+        testModelBtn.addEventListener('click', () => {
+            runModelAction('test');
+        });
+
+        function runModelAction(action) {
+            const selectedModelKey = modelSelect.value;
+            const saveModel = saveModelCheckbox.checked;
+            const loadModel = loadModelCheckbox.checked;
+            const trainSize = parseFloat(trainSizeSlider.value) / 100;
+            const hyperparameters = {};
+
+            const selectedModel = modelsConfig.models.find(model => model.key === selectedModelKey);
+            if (selectedModel && selectedModel.parameters) {
+                for (const key in selectedModel.parameters) {
+                    const inputElement = document.getElementById(`param-${key}`);
+                    if (inputElement) {
+                        let value = inputElement.value;
+                        // Convert to appropriate type
+                        if (selectedModel.parameters[key].type === 'int') {
+                            value = parseInt(value);
+                        } else if (selectedModel.parameters[key].type === 'float') {
+                            value = parseFloat(value);
                         }
+                        hyperparameters[key] = value;
                     }
-                    selectElement.selectedIndex = currentIndex;
                 }
             }
+
+            socket.emit('run_model_cli', {
+                action: action,
+                model_key: selectedModelKey,
+                save_model: saveModel,
+                load_model: loadModel,
+                train_size: trainSize,
+                hyperparameters: hyperparameters
+            });
+        }
+
+        socket.on('clear_console', () => {
+            if (consoleOutput) {
+                consoleOutput.innerHTML = '';
+            }
+        });
+
+        socket.on('console_output', (data) => {
+            logToConsole(data.output);
+        });
+
+        socket.on('metrics_update', (data) => {
+            const metricsOverlay = document.getElementById('metrics-overlay');
+            metricsOverlay.classList.remove('hidden');
+
+            document.getElementById('accuracy-stat').textContent = data.accuracy.toFixed(2);
+            document.getElementById('precision-stat').textContent = data.precision.toFixed(2);
+            document.getElementById('recall-stat').textContent = data.recall.toFixed(2);
+            document.getElementById('f1-score-stat').textContent = data.f1_score.toFixed(2);
         });
     </script>
 </body>
