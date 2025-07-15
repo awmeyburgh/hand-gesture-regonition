@@ -47,70 +47,71 @@
                 <canvas id="metrics-chart" width="400" height="200"></canvas>
             </div>
 
-            <div class="flex flex-1">
-                <!-- Panels Container -->
-                <div class="w-96 bg-white p-6 shadow-lg overflow-y-auto hidden" id="config-panel">
-                    <h2 class="text-xl font-bold mb-4">Config</h2>
-                    <div class="mb-4">
-                        <label for="model-select-config" class="block text-sm font-medium text-gray-700">Select Model:</label>
-                        <select id="model-select-config" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                            <!-- Options will be dynamically loaded here -->
-                        </select>
-                    </div>
-                    <div class="mb-4">
-                        <label for="min-confidence-slider" class="block text-sm font-medium text-gray-700">Min Confidence: <span id="min-confidence-value">80</span>%</label>
-                        <input type="range" id="min-confidence-slider" min="0" max="100" value="80" class="mt-1 w-full">
-                    </div>
-                    <div class="mb-4">
-                        <button id="toggle-landmarks-btn" class="w-full bg-blue-500 text-white py-2 px-4 rounded-md transition-colors">Landmarks</button>
-                    </div>
-                </div>
+            <div class="flex-1 grid grid-cols-[384px_1fr] h-full overflow-hidden">
 
-                <div class="w-96 bg-white p-6 shadow-lg overflow-y-auto hidden" id="data-collection-panel">
-                    <h2 class="text-xl font-bold mb-4">Data Collection</h2>
-                    <div id="static-gesture-section" class="border border-gray-300 rounded-md p-4 mb-4">
-                        <h3 class="text-lg font-semibold mb-2">Static Gestures</h3>
-                        <select id="static-gesture-select" class="gesture-select w-full p-2 border border-gray-300 rounded-md mb-2">
-                            <option value="left_hand">Left Hand</option>
-                            <option value="left_ok">Left OK</option>
-                            <option value="left_thumb_down">Left Thumb Down</option>
-                            <option value="left_index">Left Index</option>
-                            <option value="left_peace">Left Peace</option>
-                            <option value="left_thumb_up">Left Thumb Up</option>
-                            <option value="right_hand">Right Hand</option>
-                            <option value="right_ok">Right OK</option>
-                            <option value="right_thumb_down">Right Thumb Down</option>
-                            <option value="right_index">Right Index</option>
-                            <option value="right_peace">Right Peace</option>
-                            <option value="right_thumb_up">Right Thumb Up</option>
-                        </select>
-                        <button id="capture-btn" class="w-full bg-green-500 text-white py-2 px-4 rounded-md hover:bg-green-600 transition-colors">Capture</button>
-                        <div class="mt-2">
-                            <button id="compile-static-btn" class="w-full bg-purple-500 text-white py-2 px-4 rounded-md hover:bg-purple-600 transition-colors relative flex items-center justify-center space-x-2">
-                                <span id="compile-static-text">Compile</span>
-                                <span id="compile-static-spinner" class="hidden">
-                                    <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                    </svg>
-                                </span>
-                            </button>
+                <div class="h-full overflow-y-auto">
+                    <div class="w-96 bg-white p-6 shadow-lg overflow-y-auto hidden h-full" id="config-panel">
+                        <h2 class="text-xl font-bold mb-4">Config</h2>
+                        <div class="mb-4">
+                            <label for="model-select-config" class="block text-sm font-medium text-gray-700">Select Model:</label>
+                            <select id="model-select-config" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                                <!-- Options will be dynamically loaded here -->
+                            </select>
+                        </div>
+                        <div class="mb-4">
+                            <label for="min-confidence-slider" class="block text-sm font-medium text-gray-700">Min Confidence: <span id="min-confidence-value">80</span>%</label>
+                            <input type="range" id="min-confidence-slider" min="0" max="100" value="80" class="mt-1 w-full">
+                        </div>
+                        <div class="mb-4">
+                            <button id="toggle-landmarks-btn" class="w-full bg-blue-500 text-white py-2 px-4 rounded-md transition-colors">Landmarks</button>
                         </div>
                     </div>
-                    <div id="sequential-gesture-section" class="gesture-section border border-gray-300 rounded-md p-4">
-                        <h3 class="text-lg font-semibold mb-2">Sequential Gestures</h3>
-                        <select id="sequential-gesture-select" class="w-full p-2 border border-gray-300 rounded-md mb-2">
-                            <option value="left_wave">Left Wave</option>
-                            <option value="right_wave">Right Wave</option>
-                        </select>
-                        <button id="record-btn" class="w-full bg-red-500 text-white py-2 px-4 rounded-md hover:bg-red-600 transition-colors">Record</button>
-                        <div class="mt-2">
-                            <button id="compile-sequential-btn" class="w-full bg-purple-500 text-white py-2 px-4 rounded-md hover:bg-purple-600 transition-colors relative flex items-center justify-center space-x-2">
-                                <span id="compile-sequential-text">Compile</span>
-                                <span id="compile-sequential-spinner" class="hidden">
-                                    <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+
+                    <div class="w-96 bg-white p-6 shadow-lg overflow-y-auto hidden h-full" id="data-collection-panel">
+                        <h2 class="text-xl font-bold mb-4">Data Collection</h2>
+                        <div id="static-gesture-section" class="border border-gray-300 rounded-md p-4 mb-4">
+                            <h3 class="text-lg font-semibold mb-2">Static Gestures</h3>
+                            <select id="static-gesture-select" class="gesture-select w-full p-2 border border-gray-300 rounded-md mb-2">
+                                <option value="left_hand">Left Hand</option>
+                                <option value="left_ok">Left OK</option>
+                                <option value="left_thumb_down">Left Thumb Down</option>
+                                <option value="left_index">Left Index</option>
+                                <option value="left_peace">Left Peace</option>
+                                <option value="left_thumb_up">Left Thumb Up</option>
+                                <option value="right_hand">Right Hand</option>
+                                <option value="right_ok">Right OK</option>
+                                <option value="right_thumb_down">Right Thumb Down</option>
+                                <option value="right_index">Right Index</option>
+                                <option value="right_peace">Right Peace</option>
+                                <option value="right_thumb_up">Right Thumb Up</option>
+                            </select>
+                            <button id="capture-btn" class="w-full bg-green-500 text-white py-2 px-4 rounded-md hover:bg-green-600 transition-colors">Capture</button>
+                            <div class="mt-2">
+                                <button id="compile-static-btn" class="w-full bg-purple-500 text-white py-2 px-4 rounded-md hover:bg-purple-600 transition-colors relative flex items-center justify-center space-x-2">
+                                    <span id="compile-static-text">Compile</span>
+                                    <span id="compile-static-spinner" class="hidden">
+                                        <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                    </span>
+                                </button>
+                            </div>
+                        </div>
+                        <div id="sequential-gesture-section" class="gesture-section border border-gray-300 rounded-md p-4">
+                            <h3 class="text-lg font-semibold mb-2">Sequential Gestures</h3>
+                            <select id="sequential-gesture-select" class="w-full p-2 border border-gray-300 rounded-md mb-2">
+                                <option value="left_wave">Left Wave</option>
+                                <option value="right_wave">Right Wave</option>
+                            </select>
+                            <button id="record-btn" class="w-full bg-red-500 text-white py-2 px-4 rounded-md hover:bg-red-600 transition-colors">Record</button>
+                            <div class="mt-2">
+                                <button id="compile-sequential-btn" class="w-full bg-purple-500 text-white py-2 px-4 rounded-md hover:bg-purple-600 transition-colors relative flex items-center justify-center space-x-2">
+                                    <span id="compile-sequential-text">Compile</span>
+                                    <span id="compile-sequential-spinner" class="hidden">
+                                        <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                     </svg>
                                 </span>
                             </button>
@@ -121,13 +122,12 @@
                 <div class="w-96 bg-white p-6 shadow-lg overflow-y-auto flex flex-col hidden h-full" id="models-panel">
                     {% include 'models_tab.html' %}
                 </div>
+            </div>
 
-                <!-- Webcam View -->
-                <div class="flex-1 flex items-center justify-center bg-gray-200 p-4 relative">
-                    <div class="relative" style="width: 100%; padding-bottom: 75%; height: 0;">
-                        <video id="webcam" autoplay playsinline class="absolute top-0 left-0 w-full h-full object-contain"></video>
-                        <canvas id="overlay" class="absolute top-0 left-0 w-full h-full"></canvas>
-                    </div>
+            <div class="flex items-center justify-center bg-gray-200 p-4 relative">
+                <div class="relative" style="width: 100%; padding-bottom: 75%; height: 0;">
+                    <video id="webcam" autoplay playsinline class="absolute top-0 left-0 w-full h-full object-contain"></video>
+                    <canvas id="overlay" class="absolute top-0 left-0 w-full h-full"></canvas>
                 </div>
             </div>
         </div>
