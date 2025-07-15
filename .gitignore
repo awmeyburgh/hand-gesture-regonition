@@ -172,3 +172,8 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+# Ignored binary files
+data/v2/model/sequential/
+data/v2/model/static/
+data/v2/model/results.yaml
