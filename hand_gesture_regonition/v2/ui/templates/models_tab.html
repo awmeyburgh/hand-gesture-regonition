@@ -13,12 +13,20 @@
     <div class="mb-4">
         <h3 class="text-lg font-semibold mb-2">Meta Parameters</h3>
         <div class="flex items-center mb-2">
+            <input type="checkbox" id="load-model-checkbox" class="h-4 w-4 text-blue-600 border-gray-300 rounded" checked>
+            <label for="load-model-checkbox" class="ml-2 block text-sm text-gray-900">Load Model</label>
+        </div>
+        <div class="flex items-center mb-2">
             <input type="checkbox" id="save-model-checkbox" class="h-4 w-4 text-blue-600 border-gray-300 rounded" checked>
             <label for="save-model-checkbox" class="ml-2 block text-sm text-gray-900">Save Model</label>
         </div>
-        <div class="flex items-center">
-            <input type="checkbox" id="load-model-checkbox" class="h-4 w-4 text-blue-600 border-gray-300 rounded" checked>
-            <label for="load-model-checkbox" class="ml-2 block text-sm text-gray-900">Load Model</label>
+        <div class="flex items-center mb-2">
+            <input type="checkbox" id="train-checkbox" class="h-4 w-4 text-blue-600 border-gray-300 rounded" checked>
+            <label for="train-checkbox" class="ml-2 block text-sm text-gray-900">Train Model</label>
+        </div>
+        <div class="flex items-center mb-2">
+            <input type="checkbox" id="test-checkbox" class="h-4 w-4 text-blue-600 border-gray-300 rounded" checked>
+            <label for="test-checkbox" class="ml-2 block text-sm text-gray-900">Test Model</label>
         </div>
         <div class="mt-4">
             <label for="train-size-slider" class="block text-sm font-medium text-gray-700">Train Set Size: <span id="train-size-value">70</span>%</label>
@@ -37,9 +45,8 @@
     <!-- Actions -->
     <div class="mb-4">
         <h3 class="text-lg font-semibold mb-2">Actions</h3>
-        <div class="flex space-x-4">
-            <button id="train-model-btn" class="flex-1 bg-green-500 text-white py-2 px-4 rounded-md hover:bg-green-600 transition-colors">Train</button>
-            <button id="test-model-btn" class="flex-1 bg-purple-500 text-white py-2 px-4 rounded-md hover:bg-purple-600 transition-colors">Test</button>
+        <div class="flex space-x-4 mt-4">
+            <button id="run-model-btn" class="flex-1 bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 transition-colors">Run</button>
         </div>
     </div>
 

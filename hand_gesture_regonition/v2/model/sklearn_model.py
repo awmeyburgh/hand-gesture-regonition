@@ -29,6 +29,7 @@ class SklearnModel(BaseModel):
                 return pickle.load(f)
         except Exception as e:
             print(f"Exception Loading `{self.config.key}`: {e}")
+            return self
 
     def save(self):
         with open(self.path, 'wb') as f:

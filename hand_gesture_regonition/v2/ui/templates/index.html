@@ -42,13 +42,9 @@
                 </div>
             </div>
 
-            <div id="metrics-overlay" class="absolute top-[200px] right-4 bg-white p-4 rounded-lg shadow-lg z-10 hidden">
+            <div id="metrics-overlay" class="absolute top-[250px] right-4 bg-white p-4 rounded-lg shadow-lg z-10 hidden">
                 <h2 class="text-lg font-semibold">Metrics</h2>
-                <p>Accuracy: <span id="accuracy-stat" class="font-medium">...</span></p>
-                <p>Precision: <span id="precision-stat" class="font-medium">...</span></p>
-                <p>Recall: <span id="recall-stat" class="font-medium">...</span></p>
-                <p>F1 Score: <span id="f1-score-stat" class="font-medium">...</span></p>
-                
+                <canvas id="metrics-chart" width="400" height="200"></canvas>
             </div>
 
             <div class="flex flex-1">
@@ -421,6 +417,14 @@
                         panel.classList.add('hidden');
                     }
                 });
+
+                // Control metrics overlay visibility based on selected panel
+                const metricsOverlay = document.getElementById('metrics-overlay');
+                if (targetPanelId === 'models-panel') {
+                    metricsOverlay.classList.remove('hidden');
+                } else {
+                    metricsOverlay.classList.add('hidden');
+                }
             });
         });
 
@@ -530,25 +534,60 @@
 
                 const label = document.createElement('label');
                 label.classList.add('block', 'text-sm', 'font-medium', 'text-gray-700', 'w-1/3');
-                label.textContent = `${key} (${param.type}):`;
+                if (param.optional) {
+                    label.textContent = `${key} (~${param.type}):`;
+                } else {
+                    label.textContent = `${key} (${param.type}):`;
+                }
                 paramDiv.appendChild(label);
 
                 let inputElement;
                 if (param.type === 'enum') {
                     inputElement = document.createElement('select');
                     inputElement.classList.add('mt-1', 'block', 'w-2/3', 'p-2', 'border', 'border-gray-300', 'rounded-md', 'shadow-sm');
+                    if (param.optional) {
+                        const option = document.createElement('option');
+                        option.value = 'null';
+                        option.textContent = 'null';
+                        inputElement.appendChild(option);
+                    }
                     param.values.forEach(value => {
                         const option = document.createElement('option');
                         option.value = value;
                         option.textContent = value;
                         inputElement.appendChild(option);
                     });
+                } else if (param.type === 'bool') {
+                    inputElement = document.createElement('select');
+                    inputElement.classList.add('mt-1', 'block', 'w-2/3', 'p-2', 'border', 'border-gray-300', 'rounded-md', 'shadow-sm');
+                    if (param.optional) {
+                        const option = document.createElement('option');
+                        option.value = 'null';
+                        option.textContent = 'null';
+                        inputElement.appendChild(option);
+                    }
+                    const trueOption = document.createElement('option');
+                    trueOption.value = 'true';
+                    trueOption.textContent = 'true';
+                    inputElement.appendChild(trueOption);
+                    const falseOption = document.createElement('option');
+                    falseOption.value = 'false';
+                    falseOption.textContent = 'false';
+                    inputElement.appendChild(falseOption);
                 } else {
                     inputElement = document.createElement('input');
                     inputElement.classList.add('mt-1', 'block', 'w-2/3', 'p-2', 'border', 'border-gray-300', 'rounded-md', 'shadow-sm');
-                    inputElement.type = (param.type === 'int' || param.type === 'float') ? 'number' : 'text';
+                    if (param.optional && (param.type === 'int' || param.type === 'float')) {
+                        inputElement.type = 'text';
+                    } else {
+                        inputElement.type = (param.type === 'int' || param.type === 'float') ? 'number' : 'text';
+                    }
                 }
-                inputElement.value = param.default;
+                if (param.optional) {
+                    inputElement.value = 'null';
+                } else {
+                    inputElement.value = param.default;
+                }
                 inputElement.id = `param-${key}`;
                 paramDiv.appendChild(inputElement);
                 hyperparametersContainer.appendChild(paramDiv);
@@ -577,9 +616,9 @@
         logToConsole('Models tab initialized.');
         logToConsole('Waiting for model selection...');
 
-        // Action buttons for models tab
-        const trainModelBtn = document.getElementById('train-model-btn');
-        const testModelBtn = document.getElementById('test-model-btn');
+        const runModelBtn = document.getElementById('run-model-btn');
+        const trainCheckbox = document.getElementById('train-checkbox');
+        const testCheckbox = document.getElementById('test-checkbox');
         const saveModelCheckbox = document.getElementById('save-model-checkbox');
         const loadModelCheckbox = document.getElementById('load-model-checkbox');
         const trainSizeSlider = document.getElementById('train-size-slider');
@@ -589,18 +628,16 @@
             trainSizeValue.textContent = trainSizeSlider.value;
         });
 
-        trainModelBtn.addEventListener('click', () => {
-            runModelAction('train');
+        runModelBtn.addEventListener('click', () => {
+            runModelAction();
         });
 
-        testModelBtn.addEventListener('click', () => {
-            runModelAction('test');
-        });
-
-        function runModelAction(action) {
+        function runModelAction() {
             const selectedModelKey = modelSelect.value;
             const saveModel = saveModelCheckbox.checked;
             const loadModel = loadModelCheckbox.checked;
+            const train = trainCheckbox.checked;
+            const test = testCheckbox.checked;
             const trainSize = parseFloat(trainSizeSlider.value) / 100;
             const hyperparameters = {};
 
@@ -610,22 +647,28 @@
                     const inputElement = document.getElementById(`param-${key}`);
                     if (inputElement) {
                         let value = inputElement.value;
-                        // Convert to appropriate type
-                        if (selectedModel.parameters[key].type === 'int') {
-                            value = parseInt(value);
-                        } else if (selectedModel.parameters[key].type === 'float') {
-                            value = parseFloat(value);
+                        if (inputElement.value === 'null') {
+                            hyperparameters[key] = 'null';
+                        } else if (inputElement.value !== '') {
+                            if (selectedModel.parameters[key].type === 'int') {
+                                value = parseInt(value);
+                            } else if (selectedModel.parameters[key].type === 'float') {
+                                value = parseFloat(value);
+                            } else if (selectedModel.parameters[key].type === 'bool') {
+                                value = (value === 'true');
+                            }
+                            hyperparameters[key] = value;
                         }
-                        hyperparameters[key] = value;
                     }
                 }
             }
 
             socket.emit('run_model_cli', {
-                action: action,
                 model_key: selectedModelKey,
                 save_model: saveModel,
                 load_model: loadModel,
+                train: train,
+                test: test,
                 train_size: trainSize,
                 hyperparameters: hyperparameters
             });
@@ -641,14 +684,51 @@
             logToConsole(data.output);
         });
 
+        let metricsChart = null;
+
         socket.on('metrics_update', (data) => {
             const metricsOverlay = document.getElementById('metrics-overlay');
             metricsOverlay.classList.remove('hidden');
 
-            document.getElementById('accuracy-stat').textContent = data.accuracy.toFixed(2);
-            document.getElementById('precision-stat').textContent = data.precision.toFixed(2);
-            document.getElementById('recall-stat').textContent = data.recall.toFixed(2);
-            document.getElementById('f1-score-stat').textContent = data.f1_score.toFixed(2);
+            const ctx = document.getElementById('metrics-chart').getContext('2d');
+            const labels = ['Accuracy', 'Precision', 'Recall', 'F1 Score'];
+            const trainMetrics = [data.train.accuracy, data.train.precision, data.train.recall, data.train.f1_score];
+            const testMetrics = [data.test.accuracy, data.test.precision, data.test.recall, data.test.f1_score];
+
+            if (metricsChart) {
+                metricsChart.destroy();
+            }
+
+            metricsChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Train',
+                            data: trainMetrics,
+                            backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                            borderColor: 'rgba(54, 162, 235, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Test',
+                            data: testMetrics,
+                            backgroundColor: 'rgba(255, 99, 132, 0.5)',
+                            borderColor: 'rgba(255, 99, 132, 1)',
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 1.0
+                        }
+                    }
+                }
+            });
         });
     </script>
 </body>

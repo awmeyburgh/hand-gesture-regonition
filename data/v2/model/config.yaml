@@ -6,16 +6,208 @@ models:
     filename: "logistic_regression.pickle"
     parameters:
       penalty:
+        optional: true
         type: enum
         default: l2
         values:
           - l1
           - l2
           - elasticnet
-      C:
+          - null
+      dual:
+        optional: false
+        type: bool
+        default: false
+      tol:
+        optional: false
         type: float
-        default: 1
+        default: 0.0001
+      C:
+        optional: false
+        type: float
+        default: 1.0
+      fit_intercept:
+        optional: false
+        type: bool
+        default: true
+      intercept_scaling:
+        optional: false
+        type: float
+        default: 1.0
+      class_weight:
+        optional: true
+        type: enum
+        default: null
+        values:
+          - balanced
+          - null
+      solver:
+        optional: false
+        type: enum
+        default: lbfgs
+        values:
+          - lbfgs
+          - liblinear
+          - newton-cg
+          - newton-cholesky
+          - sag
+          - saga
       max_iter:
+        optional: false
         type: int
         default: 100
-          
+      multi_class:
+        optional: false
+        type: enum
+        default: auto
+        values:
+          - auto
+          - ovr
+          - multinomial
+      l1_ratio:
+        optional: true
+        type: float
+        default: null
+  - 
+    type: "Static"
+    name: "Random Forest"
+    key: "static/random_forest"
+    filename: "random_forest.pickle"
+    parameters:
+      n_estimators:
+        optional: false
+        type: int
+        default: 100
+      criterion:
+        optional: false
+        type: enum
+        default: "gini"
+        values:
+          - "gini"
+          - "entropy"
+          - "log_loss"
+      max_depth:
+        optional: true
+        type: int
+        default: null
+      min_samples_split:
+        optional: false
+        type: int
+        default: 2
+      min_samples_leaf:
+        optional: false
+        type: int
+        default: 1
+      min_weight_fraction_leaf:
+        optional: false
+        type: float
+        default: 0.0
+      max_features:
+        optional: false
+        type: enum
+        default: "sqrt"
+        values:
+          - "sqrt"
+          - "log2"
+          - null
+      max_leaf_nodes:
+        optional: true
+        type: int
+        default: null
+      min_impurity_decrease:
+        optional: false
+        type: float
+        default: 0.0
+      bootstrap:
+        optional: false
+        type: bool
+        default: true
+      oob_score:
+        optional: false
+        type: bool
+        default: false
+      class_weight:
+        optional: true
+        type: enum
+        default: null
+        values:
+          - "balanced"
+          - "balanced_subsample"
+          - null
+      ccp_alpha:
+        optional: false
+        type: float
+        default: 0.0
+      max_samples:
+        optional: true
+        type: int
+        default: null
+  -
+    type: "Static"
+    name: "Support Vector Machine"
+    key: "static/support_vector_machine"
+    filename: "support_vector_machine.pickle"
+    parameters:
+      C:
+        optional: false
+        type: float
+        default: 1.0
+      kernel:
+        optional: false
+        type: enum
+        default: "rbf"
+        values:
+          - "linear"
+          - "poly"
+          - "rbf"
+          - "sigmoid"
+          - "precomputed"
+      degree:
+        optional: false
+        type: int
+        default: 3
+      gamma:
+        optional: false
+        type: enum
+        default: "scale"
+        values:
+          - "scale"
+          - "auto"
+      coef0:
+        optional: false
+        type: float
+        default: 0.0
+      shrinking:
+        optional: false
+        type: bool
+        default: true
+      tol:
+        optional: false
+        type: float
+        default: 0.001
+      cache_size:
+        optional: false
+        type: float
+        default: 200.0
+      class_weight:
+        optional: true
+        type: enum
+        default: null
+        values:
+          - "balanced"
+          - null
+      max_iter:
+        optional: false
+        type: int
+        default: -1
+      decision_function_shape:
+        optional: false
+        type: enum
+        default: "ovr"
+        values:
+          - "ovo"
+          - "ovr"
+      break_ties:
+        optional: false
+        type: bool
+        default: false

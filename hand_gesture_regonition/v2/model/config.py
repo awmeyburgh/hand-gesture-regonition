@@ -6,6 +6,7 @@ from pathlib import Path
 class ParameterConfig(BaseModel):
     type: str
     default: Any
+    optional: bool
     values: Optional[List[Any]] = None
 
 class ModelConfig(BaseModel):

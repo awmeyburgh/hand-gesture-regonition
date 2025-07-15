@@ -9,7 +9,7 @@ class BaseModel(ABC):
         self.config = config
 
         self.kwargs = {
-            name: kwargs.get(name, p.default)
+            name: kwargs.get(name, None if p.optional else p.default)
             for name, p in self.config.parameters.items()
         }
 

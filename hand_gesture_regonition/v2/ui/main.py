@@ -170,22 +170,40 @@ def compile_sequential_dataset():
 
 @socketio.on('run_model_cli')
 def run_model_cli(data):
-    action = data['action']  # 'train' or 'test'
     model_key = data['model_key']
     save_model = data['save_model']
     load_model = data['load_model']
+    train = data['train']
+    test = data['test']
+    train_size = data['train_size']
     hyperparameters = data['hyperparameters']
 
-    command = ["poetry", "run", "python", "hand_gesture_regonition/v2/model/cli.py", action, model_key]
+    command = ["poetry", "run", "python", "hand_gesture_regonition/v2/model/cli.py", model_key]
+
+    command.extend(["--train-size", str(train_size)])
 
     if save_model:
         command.append("--save")
     if load_model:
         command.append("--load")
+    if train:
+        command.append("--train")
+    if test:
+        command.append("--test")
 
+    # Collect hyperparameters as a list of strings for the 'params' argument
+    cli_params = ['--']
     if hyperparameters:
         for key, value in hyperparameters.items():
-            command.extend([key, str(value)])
+            cli_params.append(key)
+            str_value = str(value)
+            # Quote values that start with a hyphen to prevent them from being interpreted as options
+            if str_value.startswith('-'):
+                cli_params.append(f'"{str_value}"')
+            else:
+                cli_params.append(str_value)
+
+    command.extend(cli_params)
 
     socketio.emit('clear_console')
     socketio.emit('console_output', {'output': f"Running command: {' '.join(command)}\n"})
@@ -198,7 +216,10 @@ def run_model_cli(data):
         return_code = process.wait()
         socketio.emit('console_output', {'output': f"Command finished with exit code {return_code}\n"})
 
-        if action in ["train", "test"] and return_code == 0:
+        if (train or test) and return_code == 0:
+            # Invalidate the cached model so the new one is loaded on next prediction
+            if model_key in loaded_models:
+                del loaded_models[model_key]
             try:
                 with open(CONFIG_PATH.parent / "results.yaml", 'r') as f:
                     metrics_data = yaml.safe_load(f)
